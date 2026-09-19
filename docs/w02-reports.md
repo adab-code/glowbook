@@ -8,8 +8,8 @@
 
 **Synchronous meeting — Sept 17, 2026 · 20:00 (Microsoft Teams)**
 
-- **Team members present:** Iván Chulde, Aaron Alfaro Alfaro Barra
-- **Team leader:** Aaron Alfaro (this week)
+- **Team members present:** Iván Chulde, Aaron Daniel Alfaro Barra
+- **Team leader:** Aaron Daniel Alfaro Barra (this week)
 
 **Selected proposal — GlowBook:** A booking and client management web application for independent beauty professionals and small studios (lash technicians, hairstylists, nail artists). It replaces WhatsApp/DM juggling and paper notebooks with a single place to schedule appointments, keep client history and notes, and manage the services the studio offers.
 
@@ -20,20 +20,20 @@
 ## 2. Project Setup
 
 - **Team public GitHub repository (initial project files):** https://github.com/adab-code/glowbook
-- **GitHub Project Board (with issues):** https://github.com/adab-code/glowbook/projects/1 _(confirm the number after creating the board)_
+- **GitHub Project Board (with issues):** https://github.com/adab-code/glowbook/projects/1
 
 ### Issues tracked on the board
 
-| # | Issue (title) | Priority | Label | Assignee |
-|---|---|---|---|---|
-| 1 | Scaffold Next.js project with App Router, TypeScript and Tailwind | P1 | frontend | Aaron |
-| 2 | Implement authentication: sign up, sign in, sign out and password reset (FR-001..FR-005) | P1 | backend | Iván |
-| 3 | Design database schema and seed data: Account, Staff, Client, Service, Appointment | P1 | backend | Iván |
-| 4 | Service catalog CRUD with validation and delete confirmation (FR-008..FR-010) | P1 | backend | Aaron |
-| 5 | Client profiles CRUD with notes and appointment history (FR-011..FR-016) | P1 | backend | Aaron |
-| 6 | Appointment calendar: create, view, edit, cancel and overlap warning (FR-017..FR-024) | P1 | backend | Iván |
-| 7 | Daily dashboard with today's and upcoming appointments (FR-025..FR-027) | P2 | frontend | Aaron |
-| 8 | Deploy application to Vercel with environment variables configured | P1 | infra | Iván |
+| # | Issue (title) | Priority | Label |
+|---|---|---|---|
+| 1 | [Scaffold Next.js project with App Router, TypeScript and Tailwind](https://github.com/adab-code/glowbook/issues/1) | P1 | frontend |
+| 2 | [Implement authentication: sign up, sign in, sign out and password reset (FR-001..FR-005)](https://github.com/adab-code/glowbook/issues/2) | P1 | backend |
+| 3 | [Design database schema and seed data: Account, Staff, Client, Service, Appointment](https://github.com/adab-code/glowbook/issues/3) | P1 | backend |
+| 4 | [Service catalog CRUD with validation and delete confirmation (FR-008..FR-010)](https://github.com/adab-code/glowbook/issues/4) | P1 | backend |
+| 5 | [Client profiles CRUD with notes and appointment history (FR-011..FR-016)](https://github.com/adab-code/glowbook/issues/5) | P1 | backend |
+| 6 | [Appointment calendar: create, view, edit, cancel and overlap warning (FR-017..FR-024)](https://github.com/adab-code/glowbook/issues/6) | P1 | backend |
+| 7 | [Daily dashboard with today's and upcoming appointments (FR-025..FR-027)](https://github.com/adab-code/glowbook/issues/7) | P2 | frontend |
+| 8 | [Deploy application to Vercel with environment variables configured](https://github.com/adab-code/glowbook/issues/8) | P1 | infra |
 
 ---
 
