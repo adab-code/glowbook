@@ -1,7 +1,5 @@
 # W02 Team: Project & Code Review Reports — GlowBook
 
-> _Submission prepared to match the Canvas Submission Instructions for W02 Team: Project & Code Review Reports._
-
 ---
 
 ## 1. Team Meeting Summary
@@ -20,7 +18,7 @@
 ## 2. Project Setup
 
 - **Team public GitHub repository (initial project files):** https://github.com/adab-code/glowbook
-- **GitHub Project Board (with issues):** https://github.com/adab-code/glowbook/projects/1
+- **GitHub Project Board (with issues):** https://github.com/users/adab-code/projects/2
 
 ### Issues tracked on the board
 
