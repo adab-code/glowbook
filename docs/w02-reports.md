@@ -41,7 +41,7 @@
 
 - **Specification document (saved in the repository):** https://github.com/adab-code/glowbook/blob/main/docs/glowbook-spec.md
 
-**Reflection on building the specification with Spec-Kit AI:** Using the Spec-Kit AI tool from a short project description worked very well for speed and structure — it produced a complete draft (overview, user stories, acceptance scenarios, functional requirements, and API endpoints) in minutes. The main challenge was generic output: priorities and edge cases needed human judgment. To ensure the document accurately reflected our team's project, we reviewed every user story and requirement in our synchronous meeting and adjusted the scope, priorities, and API design before committing the final version to the repository.
+**Reflection on building the specification with Spec-Kit AI:** Running Spec Kit in our repo against a short project description worked very well — after initializing the project with the opencode integration, the `/speckit-constitution` skill let us define our team's quality and governance principles, and `/speckit-specify` generated a complete specification (`specs/001-glowbook-booking/spec.md`) covering user stories with priorities and independent tests, acceptance scenarios, edge cases, functional requirements, entities, and measurable success criteria in minutes. The main challenge was generic, implementation-flavored output that still needs human judgment, so we walked through the draft together in our synchronous meeting and adjusted scope, priorities, and assumptions to match our real MVP decisions before committing it to the repository.
 
 ---
 
