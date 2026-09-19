@@ -19,8 +19,8 @@
 
 ## 2. Project Setup
 
-- **Team public GitHub repository (initial project files):** `<https://github.com/<owner>/glowbook>` _(fill with the real URL after creating/pushing the repo)_
-- **GitHub Project Board (with issues):** `<https://github.com/<owner>/glowbook/projects/1>` _(fill after creating the board)_
+- **Team public GitHub repository (initial project files):** https://github.com/adab-code/glowbook
+- **GitHub Project Board (with issues):** https://github.com/adab-code/glowbook/projects/1 _(confirm the number after creating the board)_
 
 ### Issues tracked on the board
 
@@ -39,7 +39,7 @@
 
 ## 3. Project Specification Document
 
-- **Specification document (saved in the repository):** `<https://github.com/<owner>/glowbook/blob/main/docs/glowbook-spec.md>` _(fill with the real URL)_
+- **Specification document (saved in the repository):** https://github.com/adab-code/glowbook/blob/main/docs/glowbook-spec.md
 
 **Reflection on building the specification with Spec-Kit AI:** Using the Spec-Kit AI tool from a short project description worked very well for speed and structure — it produced a complete draft (overview, user stories, acceptance scenarios, functional requirements, and API endpoints) in minutes. The main challenge was generic output: priorities and edge cases needed human judgment. To ensure the document accurately reflected our team's project, we reviewed every user story and requirement in our synchronous meeting and adjusted the scope, priorities, and API design before committing the final version to the repository.
 
