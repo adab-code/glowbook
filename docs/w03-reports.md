@@ -149,16 +149,30 @@ Full specification with token values: [`docs/design-system.md`](https://github.c
 
 ## 4. W03 Team: Code Review Report
 
-**Pull Request reviewed:** ‹‹PASTE PR URL — open the PR from the assigned teammate's repository and leave line-level review comments on it.››
+**Pull Request reviewed:** https://github.com/ivanchulde/sacrament-meetings/pull/1
 
-- **Repository:** https://github.com/adab-code/glowbook (or the teammate's repository, whichever hosts the reviewed PR)
-- **Base → head:** ‹‹`main` ← `feat/…`››
-- **What the PR does:** ‹‹one line — e.g. adds the Prisma schema and seed data for the Account, StaffUser, Client, Service, and Appointment entities.››
-- **Review comments submitted:** comments on the Prisma schema relations and cascade rules, Zod validation on the mutation route handlers, the tenant-isolation check on every query, and the Tailwind token usage in the new components.
-- **Outcome:** changes requested, then approved and merged after an updated commit — one approving review from the other team member, per our branch protection rules.
+- **Repository (assigned teammate's):** https://github.com/ivanchulde/sacrament-meetings
+- **PR title:** Complete Sacrament Meeting Planner
+- **Branch:** `peer-code-review` → `main` · 4 commits · 19 files changed · +846 / −97
+- **Preview deployment:** Vercel deployed the branch successfully; all checks passed, no conflicts with the base branch
 
-**Reviewer's summary of the review:**
+### Review comment submitted on the pull request
 
-- **What worked:** the PR was small and scoped to a single issue, the commit history was readable, and the author had already run `npm run lint` and `npm run build` before requesting review.
-- **What I flagged:** two `findMany` queries in the appointments route handler were missing an `accountId` filter, which would have leaked another studio's appointments; the delete handlers returned `200` instead of `409` when a record was still referenced; and a `ClientForm` used raw hex values instead of the `brand-*` / `neutral-*` tokens.
-- **What I'd suggest for the team going forward:** keep schema and seed data in their own PR so the data model can be reviewed as a unit before feature code builds on it.
+> Overall, the implementation meets the main requirements of the checklist. The TypeScript data model is properly defined, there are five complete meeting records, and no `any` type is used in the modified files. The reusable components are present, and `MeetingDetail` displays the required meeting information. The routing, layouts, API routes, and typed data fetching are also implemented correctly.
+>
+> One area I would recommend checking is the cleanup of the original Next.js template code. The diff shows some old imports and template content in `app/layout.tsx` and `app/page.tsx`. If any of that code remains in the final files, it should be removed to avoid unused imports and unnecessary code. Other than that, the implementation follows the checklist well.
+
+**What I checked:** the TypeScript data model and whether the five meeting records are complete, that no `any` type slipped into the modified files, that the reusable components are actually shared across pages, that `MeetingDetail` renders every required field, and that routing, layouts, the API routes, and typed data fetching are all correctly implemented.
+
+**The one actionable finding:** leftover `create-next-app` template code in `app/layout.tsx` and `app/page.tsx` — old imports and boilerplate markup that should be removed so the final files carry no unused imports.
+
+### Vercel deployment review notes
+
+Tested the Vercel preview deployment of the same branch on **PC / Chrome**. No issues were found on any route:
+
+- `/api/meetings` — no problems were found.
+- `/api/meetings/1` — no problems were found.
+- `/meetings` — no problems were found.
+- `/meetings/1` — no problems were found.
+- `/meetings/current` — no problems were found.
+- `/meetings` layout — no problems were found.
