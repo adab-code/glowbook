@@ -1,8 +1,11 @@
 # Feature Specification: GlowBook
 
-**Feature Branch**: `001-glowbook`
-**Created**: 2026-09-17
-**Status**: Draft
+**Feature Branch**: `001-glowbook-booking`
+**Created**: 2026-09-17 · **Last reviewed**: 2026-09-24 (Week 03 team meeting)
+**Status**: Agreed — team-reviewed copy
+**Spec-Kit source artifact**: [`specs/001-glowbook-booking/spec.md`](../specs/001-glowbook-booking/spec.md) (quality checklist: [`requirements.md`](../specs/001-glowbook-booking/checklists/requirements.md))
+
+> This document is the authoritative project specification the team builds from. It is the Spec-Kit output from Week 02, restructured and expanded by the team during the Week 02 and Week 03 meetings. Supporting planning documents: [`architecture.md`](./architecture.md), [`data-model.md`](./data-model.md), [`design-system.md`](./design-system.md).
 
 **Input**: User description: "Create a project specification for GlowBook, a booking and client management app for independent beauty professionals and small studios (lash technicians, hairstylists, nail artists, and similar businesses). Include: a project title and description, the purpose and target audience, user stories for core workflows (owner/staff sign up, sign in, sign out, create, read, update, delete clients, services, and appointments, and a daily dashboard), acceptance criteria for each story, API endpoints, and implementation priority."
 
@@ -148,6 +151,21 @@ A signed-in user opens the dashboard, so that they can see, at a glance, today's
 - **Service**: Represents an offering the studio provides; includes name, price, and estimated duration; can be linked to multiple appointments.
 - **Appointment**: Represents a scheduled booking; includes a client, one or more services, date, time, and current status (Scheduled, Completed, Cancelled, No-show).
 
+## Technical Requirements
+
+- **Framework:** Next.js 16 using the App Router, with React Server Components by default and client components only where interactivity is required
+- **Language:** TypeScript 5 in `strict` mode; no `any` in application code
+- **Styling:** Tailwind CSS v4 with design tokens defined in `@theme`, plus shadcn/ui primitives
+- **Data:** PostgreSQL (Supabase) accessed through Prisma ORM; schema and relationships in [`data-model.md`](./data-model.md)
+- **Auth:** Auth.js v5 with the Credentials provider; identity stored in our own `Account` / `StaffUser` tables
+- **API:** Route handlers under `src/app/api/**`; a client → server → database round trip is required (course requirement)
+- **Hosting:** Vercel, with database credentials and auth secrets in environment variables
+- **Version control:** GitHub with a protected `main` branch, feature branches, and pull-request review before merge
+- **Validation:** Zod schemas shared between client forms and route handlers
+- **Component structure:** route groups `/(auth)` and `/(app)`; feature-scoped components under `src/components/features/`; shared components under `src/components/shared/` and `src/components/ui/` (see [`architecture.md`](./architecture.md))
+- **Design system:** defined palette, type scale, spacing scale, and component library, documented in [`design-system.md`](./design-system.md)
+- **Accessibility and responsiveness:** every view works on mobile and desktop without horizontal scrolling; semantic HTML, labelled inputs, visible focus states, and no colour-only status indicators
+
 ## Reference: Illustrative API Endpoints
 
 *(Non-binding reference for planning purposes; not a contract for implementation technology.)*
@@ -185,6 +203,19 @@ A signed-in user opens the dashboard, so that they can see, at a glance, today's
 3. **P1 — Client Profiles**: Needed before appointments can be booked.
 4. **P1 — Appointment Calendar**: Core day-to-day value; depends on clients and services.
 5. **P2 — Daily Dashboard**: Builds on the calendar to surface today's and upcoming appointments at a glance.
+
+## Assumptions
+
+- **Single-workspace tenancy.** A studio is the isolation boundary. Staff invited to a studio share its clients, services, and appointments; there is no cross-studio sharing in the MVP.
+- **Email-based invitations.** Staff invitations and password resets are delivered by email link. The MVP assumes a transactional email provider; invitations expire after 7 days and reset links after 1 hour.
+- **Owner is the first signup.** Whoever creates the studio account becomes its `OWNER` with full permissions, including staff management.
+- **Single timezone per studio.** Appointments are stored in UTC and rendered in the studio's configured timezone, so a travelling user sees the studio's schedule.
+- **Money in integer cents.** Prices are whole-cent integers in the studio's currency; no taxes, tips, deposits, or payouts in the MVP.
+- **Duration comes from services.** `Appointment.endsAt` is derived from the selected services' `durationMinutes`; there is no custom duration override per appointment.
+- **Past appointments are writable.** Booking into the past is allowed with a warning, because studios log historical appointments after the fact.
+- **Deletion strategy.** Clients can be soft-deleted (`isArchived`) so history survives; services referenced by appointments cannot be deleted until those appointments are cancelled or reassigned.
+- **No automated test suite in Week 03–04.** Acceptance scenarios in this document are written to be directly demonstrable and become the first Vitest/Playwright suite once the feature work stabilises.
+- **Out of scope (Phase 2 backlog):** payments, online booking by clients, SMS/email reminders, recurring appointments, month calendar view with drag-to-reschedule, and reporting/analytics.
 
 ## Success Criteria
 
