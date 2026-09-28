@@ -115,7 +115,7 @@ The full method/endpoint table with auth requirements is in the [README](../READ
 
 shadcn/ui components, unmodified where possible: `button`, `input`, `label`, `textarea`, `select`, `dialog`, `dropdown-menu`, `table`, `badge`, `card`, `calendar`, `popover`, `toast`/`sonner`, `skeleton`, `alert-dialog`, `form`.
 
-**Count: 8 layout/shared components + ~19 feature components + 14 UI primitives — comfortably over the "at least 5 components used across multiple pages" requirement.**
+**Count: 8 layout/shared components + ~19 feature components + 14 UI primitives planned. As of the W03 submission 22 are built — 3 layout, 7 shared, 8 feature, 4 UI — of which 11 are used across two or more pages, already over the "at least 5 components used across multiple pages" requirement.**
 
 ---
 

@@ -120,36 +120,45 @@ Database migrations are **not** run on every deploy — run `npx prisma migrate 
 
 ## Project Structure
 
-Target structure agreed in the Week 03 meeting. Directories marked *(planned)* are built during Week 04; everything else exists today.
+The structure below reflects the repository as it stands after the Week 04 milestone (issues #1–#5).
 
 ```
 src/
+  auth.ts              → Auth.js v5 config: Credentials provider, JWT session claims
+  proxy.ts             → optimistic auth gate (Next 16 renamed middleware.ts → proxy.ts)
   app/
-    (auth)/login, signup, forgot-password   → unauthenticated routes *(planned)*
-    (app)/dashboard, calendar, clients, …   → authenticated routes *(planned)*
-    api/                                    → route handlers (client → server → DB) *(planned)*
-    proxy.ts                                → auth interception *(planned)*
-    layout.tsx, page.tsx, globals.css
+    layout.tsx         → root layout, next/font (Geist, Geist_Mono, Fraunces)
+    globals.css        → Tailwind v4 design tokens in an @theme block
+    (auth)/            → login, signup, forgot-password, reset-password
+    (app)/             → authenticated shell: dashboard, services, clients, appointments*, team*, settings*
+    api/               → route handlers (client → server → DB)
   components/
-    ui/          → shadcn/ui primitives *(planned)*
-    layout/      → AppShell, Sidebar, Topbar, PageHeader *(planned)*
-    features/    → service/, client/, appointment/, dashboard/ *(planned)*
+    ui/                → design-system primitives: button, card, input, label
+    shared/            → form-field, submit-button, confirm-dialog, status-badge, empty-state, page-header, spinner
+    layout/            → auth-card, app-sidebar, app-header
+    features/          → auth/, services/, clients/  *(appointments/ and staff/ not built yet)*
   lib/
-    auth.ts, db.ts, validations/ (Zod schemas) *(planned)*
-  types/
+    db.ts              → Prisma 7 client singleton with the @prisma/adapter-pg driver adapter
+    auth/              → session.ts (requireUser / requireOwner), actions.ts (server actions)
+    api/errors.ts      → ApiError + the shared JSON error envelope
+    validations/       → Zod 4 schemas shared by forms and route handlers
+    utils/             → format, tokens, api-client
+  types/               → next-auth module augmentation
 prisma/
-  schema.prisma, migrations/, seed.ts *(planned)*
+  schema.prisma, migrations/, seed.ts
 docs/
   glowbook-spec.md   → the project specification (authoritative)
-  architecture.md    → routes, components, hierarchy
+  architecture.md    → routes, components, hierarchy, Week 04 priority ranking
   data-model.md      → entities, fields, relationships
   design-system.md   → palette, typography, spacing
   w02-reports.md, w03-reports.md
-specs/001-glowbook-booking/  → Spec-Kit working spec + quality checklist
+specs/001-glowbook-booking/  → original Spec-Kit working spec (superseded by docs/glowbook-spec.md)
 .github/copilot-instructions.md → AI assistant rules for the whole team
 ```
 
-**Rendering strategy:** server components by default; `"use client"` only where interactivity is required (forms, calendar navigation, optimistic updates). Data fetching happens in server components and route handlers, not in client components.
+\* `appointments`, `team`, and `settings` are stubs or read-only — see [Known Issues](#known-issues--opportunities-for-improvement).
+
+**Rendering strategy:** server components by default; `"use client"` only where interactivity is required (forms, optimistic list updates). Data fetching happens in server components and route handlers, not in client components.
 
 ---
 
@@ -157,35 +166,38 @@ specs/001-glowbook-booking/  → Spec-Kit working spec + quality checklist
 
 All endpoints are route handlers under `src/app/api`. They return JSON, require an authenticated session unless noted, and are scoped to the signed-in user's studio.
 
-> **Status:** this is the agreed API surface from [`docs/glowbook-spec.md`](docs/glowbook-spec.md) and [`docs/architecture.md`](docs/architecture.md). The handlers themselves are implemented during Week 04 — none exist in the repository yet.
+> **Status:** the table below is the agreed API surface from [`docs/glowbook-spec.md`](docs/glowbook-spec.md) and [`docs/architecture.md`](docs/architecture.md). Implemented handlers are marked ✅; the rest are planned and have no code yet.
+
+### Implemented
 
 | Method | Endpoint | Purpose | Auth |
 |---|---|---|---|
-| `GET` | `/api/hello` | Health check / pipeline verification | No |
-| `POST` | `/api/auth/register` | Create a studio account (sign-up) | No |
-| `POST` | `/api/auth/login` | Sign in and set the session cookie | No |
-| `POST` | `/api/auth/logout` | End the session | Yes |
-| `POST` | `/api/auth/password-reset` | Request a time-limited reset link | No |
-| `POST` | `/api/auth/password-reset/[token]` | Consume the link and set a new password | No |
-| `GET` | `/api/staff/invitations` | List pending staff invitations | Yes |
-| `POST` | `/api/staff/invitations` | Invite a staff member by email | Yes (owner) |
+| `GET`/`POST` | `/api/auth/[...nextauth]` | Auth.js catch-all: credentials sign-in, session, CSRF | No |
 | `GET` | `/api/services` | List the studio's services | Yes |
 | `POST` | `/api/services` | Create a service | Yes |
-| `GET` | `/api/services/[id]` | Read one service | Yes |
-| `PUT` | `/api/services/[id]` | Update a service | Yes |
-| `DELETE` | `/api/services/[id]` | Delete a service (warns if appointments exist) | Yes |
-| `GET` | `/api/clients` | List clients (search + pagination) | Yes |
+| `PATCH` | `/api/services/[id]` | Update a service | Yes |
+| `DELETE` | `/api/services/[id]` | Delete a service, or archive it if appointments reference it | Yes |
+| `GET` | `/api/clients` | List non-archived clients with appointment counts | Yes |
 | `POST` | `/api/clients` | Create a client | Yes |
+| `PATCH` | `/api/clients/[id]` | Update a client's details, notes, or archived flag | Yes |
+| `DELETE` | `/api/clients/[id]` | Archive a client (blocked while they have upcoming appointments) | Yes |
+
+Sign-up, sign-out, and password reset are React Server Actions in `src/lib/auth/actions.ts`, not REST endpoints — the session cookie is issued by Auth.js.
+
+### Planned (not yet implemented)
+
+| Method | Endpoint | Purpose | Auth |
+|---|---|---|---|
+| `GET` | `/api/staff/invitations` | List pending staff invitations | Yes |
+| `POST` | `/api/staff/invitations` | Invite a staff member by email | Yes (owner) |
+| `GET` | `/api/services/[id]` | Read one service | Yes |
 | `GET` | `/api/clients/[id]` | Read a client with their appointments | Yes |
-| `PUT` | `/api/clients/[id]` | Update a client or their notes | Yes |
-| `DELETE` | `/api/clients/[id]` | Delete a client (warns if appointments exist) | Yes |
 | `GET` | `/api/appointments` | List appointments, filter by status/date/staff | Yes |
 | `POST` | `/api/appointments` | Book an appointment; `409` on overlap | Yes |
 | `GET` | `/api/appointments/[id]` | Read one appointment | Yes |
-| `PUT` | `/api/appointments/[id]` | Update date, time, client, or services | Yes |
+| `PATCH` | `/api/appointments/[id]` | Update date, time, client, or services | Yes |
 | `PATCH` | `/api/appointments/[id]/status` | Update status (Scheduled, Completed, Cancelled, No-show) | Yes |
 | `DELETE` | `/api/appointments/[id]` | Delete an appointment record | Yes |
-| `GET` | `/api/dashboard/today` | Today's appointments plus upcoming preview | Yes |
 
 **Error shape:** `{ "error": { "code": string, "message": string, "fields"?: Record<string, string> } }` — `400` validation, `401` unauthenticated, `403` wrong studio, `404` not found, `409` conflict (overlapping booking or duplicate email).
 
@@ -194,19 +206,29 @@ All endpoints are route handlers under `src/app/api`. They return JSON, require 
 ## Contributing
 
 - `main` is protected — never push directly to it.
-- Branch names: `feat/<slug>`, `fix/<slug>`, `docs/<slug>` (e.g. `feat/client-crud`).
+- Branch names: `feat/<slug>`, `fix/<slug>`, `docs/<slug>`, `chore/<slug>` (e.g. `feat/client-crud`).
 - Every change lands through a pull request with at least one approving review from another team member.
 - Commit small and often; PRs should stay under ~200 changed lines so reviews take 15–20 minutes.
+- Formatting is Prettier (`.prettierrc`): run `npx prettier --write .` before committing. `npm run typecheck`, `npm run lint`, and `npx prettier --check .` must all pass before requesting review.
 - Team conventions and the governance rules we agreed on live in [`.specify/memory/constitution.md`](.specify/memory/constitution.md).
 
 ---
 
 ## Known Issues & Opportunities
 
-- Status changes on appointments are not yet audited — a status history table would help resolve disputes about no-shows.
-- The calendar renders a single day/week view; a month view and drag-to-reschedule are Phase 2.
-- Overlap detection is done in application code; a Postgres exclusion constraint on `tstzrange` would make it race-proof under concurrent requests.
-- Staff invitations expire after 7 days but there is no reminder or resend flow yet.
+**Not built yet (next milestones):**
+
+- **Appointment calendar** — the core value of the product. `/appointments` is a stub and no appointment route handlers exist. Booking, overlap detection, status transitions, and the calendar view are the next slice (board issue #6, P1).
+- **Staff invitations** — the `StaffInvite` model and `requireOwner()` exist, but there is no `/api/staff/invitations` handler and `/team` is a stub (board issue #8 backlog).
+- **Studio settings editing** — `/settings` is read-only; there is no update path.
+- **No `error.tsx` / `loading.tsx` / `not-found.tsx` boundaries** — failures currently fall through to Next.js defaults.
+
+**Known limitations of what is built:**
+
+- Overlap detection will be application-level, not a Postgres exclusion constraint on `tstzrange`. That is race-proof and is deferred to Phase 2.
+- The dashboard's "today" and "this week" windows are computed in server-local time rather than the studio's `Account.timezone`, so a UTC host reports the wrong day boundary for studios outside UTC. Times are still rendered through `formatTime(..., timezone)`.
+- Password-reset links are printed to the server console rather than emailed — there is no mail provider wired up yet.
+- Single-day schedule view only; a month view and drag-to-reschedule are Phase 2.
 - No automated test suite yet; the spec's acceptance scenarios are written to be directly testable and should become the first Vitest/Playwright suite in a later sprint.
 
 ---
