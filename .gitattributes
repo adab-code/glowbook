@@ -1,0 +1,12 @@
+# Normalise line endings so Prettier's `endOfLine: "lf"` and Git agree.
+# Without this, `core.autocrlf=true` on Windows rewrites every file to CRLF on
+# checkout and Prettier reports the whole tree as unformatted.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
