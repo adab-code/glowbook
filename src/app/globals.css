@@ -1,26 +1,109 @@
 @import "tailwindcss";
 
+/* Semantic surface variables — shadcn/ui components read these. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fffbf9;
+  --foreground: #221e1d;
+  --card: #ffffff;
+  --card-foreground: #221e1d;
+  --border: #e6deda;
+  --input: #e6deda;
+  --ring: #ce4c81;
+  --muted: #f3efee;
+  --muted-foreground: #6b605c;
 }
 
 @theme inline {
+  /* Brand — Glow Rose */
+  --color-brand-50: #fdf2f7;
+  --color-brand-100: #fae6ef;
+  --color-brand-200: #f4c9dc;
+  --color-brand-300: #eba3c1;
+  --color-brand-400: #de74a1;
+  --color-brand-500: #ce4c81;
+  --color-brand-600: #b4346a;
+  --color-brand-700: #932a57;
+  --color-brand-800: #762449;
+  --color-brand-900: #5f213d;
+
+  /* Accent — Studio Gold */
+  --color-accent-100: #faeecf;
+  --color-accent-300: #eac062;
+  --color-accent-500: #c9861f;
+  --color-accent-700: #855115;
+
+  /* Neutral — Warm Stone */
+  --color-neutral-50: #faf8f7;
+  --color-neutral-100: #f3efee;
+  --color-neutral-200: #e6deda;
+  --color-neutral-300: #d2c7c2;
+  --color-neutral-400: #a99c97;
+  --color-neutral-500: #857874;
+  --color-neutral-600: #6b605c;
+  --color-neutral-700: #574e4b;
+  --color-neutral-800: #3b3533;
+  --color-neutral-900: #221e1d;
+  --color-neutral-950: #14100f;
+
+  /* Semantic */
+  --color-success: #2f7d57;
+  --color-success-bg: #e8f5ee;
+  --color-warning: #b45309;
+  --color-warning-bg: #fdf3e3;
+  --color-danger: #c0342b;
+  --color-danger-bg: #fbebea;
+  --color-info: #2f6f8f;
+  --color-info-bg: #e9f2f7;
+
+  /* Surfaces */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  /* Typography */
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
+
+  /* Radii */
+  --radius-control: 0.5rem;
+  --radius-card: 1rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  border-color: var(--color-border);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--color-brand-500);
+    outline-offset: 2px;
+  }
+
+  h1,
+  h2 {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
