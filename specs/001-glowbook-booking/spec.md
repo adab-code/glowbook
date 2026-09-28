@@ -4,7 +4,18 @@
 
 **Created**: 2026-09-19
 
-**Status**: Draft
+**Status**: Superseded
+
+> **This is the raw Spec Kit output, kept for the Week 02 build reflection.** The
+> authoritative specification is [`docs/glowbook-spec.md`](../../docs/glowbook-spec.md),
+> which the team restructured and expanded during the Week 02 and Week 03 meetings.
+>
+> **Do not cite FR numbers from this file.** The functional requirements below run
+> FR-001…FR-012; the canonical spec runs FR-001…FR-027, and the GitHub issues reference
+> the canonical numbering. Supporting planning documents:
+> [`docs/architecture.md`](../../docs/architecture.md),
+> [`docs/data-model.md`](../../docs/data-model.md),
+> [`docs/design-system.md`](../../docs/design-system.md).
 
 **Input**: User description: "Create a project specification for GlowBook, a booking and client management app for independent beauty professionals and small studios (lash technicians, hairstylists, nail artists, and similar businesses). Include: a project title and description, the purpose and target audience, user stories for core workflows (owner/staff sign up, sign in, sign out, create, read, update, delete clients, services, and appointments, and a daily dashboard), acceptance criteria for each story, API endpoints, and implementation priority."
 

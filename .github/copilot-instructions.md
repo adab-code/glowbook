@@ -11,7 +11,7 @@ GlowBook is a booking and client management web app for independent beauty profe
 - **Next.js 16** with the App Router — React Server Components by default, `"use client"` only where interactivity is required
 - **React 19**, **TypeScript 5** in `strict` mode
 - **Tailwind CSS v4** (CSS-first `@theme` tokens in `src/app/globals.css`) with **shadcn/ui** primitives in `src/components/ui/`
-- **PostgreSQL (Supabase)** accessed through **Prisma 6** — all queries live in `src/lib/`, never in components
+- **PostgreSQL (Supabase)** accessed through **Prisma 7** with the `prisma-client` generator and the `@prisma/adapter-pg` driver adapter — all queries live in `src/lib/`, never in components
 - **Auth.js v5** with the Credentials provider
 - **Zod** for request validation, shared between client forms and route handlers
 - Deployed on **Vercel**
@@ -19,10 +19,11 @@ GlowBook is a booking and client management web app for independent beauty profe
 ## Architecture rules
 
 1. `src/app/(auth)/` holds public routes; `src/app/(app)/` holds authenticated routes inside the `AppShell`; `src/app/api/` holds route handlers.
-2. Next.js 16 specifics: request interception is `src/proxy.ts` (not `middleware.ts`); `params` and `searchParams` are Promises and must be awaited; use the generated `LayoutProps<"/">` and `PageProps<"/route">` types instead of hand-written prop interfaces.
-3. Data flow is one way: route handler → Prisma → JSON → server component → client component state. Do not add a client-side fetching library.
-4. Feature components live in `src/components/features/<domain>/` and must not import from another feature folder. Anything used by three or more routes belongs in `src/components/ui/` or `src/components/shared/`.
-5. After a mutation, call `revalidatePath()` so the server component re-renders. Do not add client-side cache invalidation libraries.
+2. Next.js 16 specifics: request interception is `src/proxy.ts` (not `middleware.ts`); `params` and `searchParams` are Promises and must be awaited. The generated `LayoutProps<"/">` and `PageProps<"/route">` global types are available via `next typegen` — prefer them over hand-written prop interfaces.
+3. Prisma 7 specifics: the datasource block in `prisma/schema.prisma` has **no `url` field** — the connection string comes from `prisma7.config.ts`, and migrations/seeds are configured in that same file (`migrations.path`, `migrations.seed`). The `prisma` key in `package.json` is ignored by Prisma 7. The client is generated to `src/generated/prisma/` (gitignored) and must be regenerated with `npm run db:generate`.
+4. Data flow is one way: route handler → Prisma → JSON → server component → client component state. Do not add a client-side fetching library.
+5. Feature components live in `src/components/features/<domain>/` and must not import from another feature folder. Anything used by three or more routes belongs in `src/components/ui/` or `src/components/shared/`.
+6. After a mutation, call `revalidatePath()` so the server component re-renders. Do not add client-side cache invalidation libraries.
 
 ## Data model
 
@@ -41,7 +42,7 @@ Entities: `Account`, `StaffUser`, `StaffInvite`, `Client`, `Service`, `Appointme
 - Return the shared error shape: `{ error: { code, message, fields? } }`.
 - Status codes: `400` validation, `401` unauthenticated, `403` forbidden action, `404` missing or wrong studio, `409` conflict (duplicate email, overlapping appointment, delete blocked).
 - Auth failures return a generic "invalid email or password" — never reveal whether an account exists.
-- Register: `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout`, `POST /api/auth/password-reset`, `POST /api/auth/password-reset/[token]`.
+- Register and session routes are the Auth.js catch-all at `app/api/auth/[...nextauth]/route.ts`. Sign-up, password reset and sign-out are React Server Actions in `src/lib/auth/actions.ts`, not REST endpoints.
 
 ## Styling
 
@@ -72,7 +73,8 @@ There is no automated suite yet. When adding one, follow the acceptance scenario
 - `main` is protected. Branch names: `feat/<slug>`, `fix/<slug>`, `docs/<slug>`.
 - One issue per branch, roughly 4–8 hours of work, one primary owner.
 - Every change lands through a pull request with at least one approving review from the other team member; aim for a 24-hour review turnaround.
-- `npm run lint` and `npm run build` must pass before requesting review.
+- `npm run typecheck`, `npm run lint`, and `npx prettier --check .` must pass before requesting review.
+- Formatting is Prettier's job, configured in `.prettierrc`. Do not hand-align code or add new formatter config in a file.
 - Keep PRs small — under ~200 changed lines.
 
 ## When suggesting changes
