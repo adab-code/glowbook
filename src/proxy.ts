@@ -6,6 +6,19 @@ const SESSION_COOKIES = [
 ];
 
 /**
+ * Auth pages are reachable *because* the visitor has no session, so they must be
+ * excluded from the unauthenticated redirect below. Including them in the rule
+ * that sends unauthenticated visitors to /login is a self-redirect: /login
+ * becomes /login?from=/login, which matches again, forever.
+ */
+const AUTH_ROUTES = [
+  "/login",
+  "/signup",
+  "/forgot-password",
+  "/reset-password",
+];
+
+/**
  * Optimistic gate only. Proxy runs on the edge and cannot reach the database, so
  * this just checks that a session cookie exists before rendering an (app) route.
  * The real, authoritative check happens in the (app) layout via `requireUser()`,
@@ -17,8 +30,15 @@ export function proxy(request: NextRequest) {
     request.cookies.has(name),
   );
 
-  if (pathname.startsWith("/login") && hasSessionCookie) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+  const isAuthRoute = AUTH_ROUTES.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`),
+  );
+
+  if (isAuthRoute) {
+    if (hasSessionCookie) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+    return NextResponse.next();
   }
 
   if (!hasSessionCookie) {
@@ -39,5 +59,8 @@ export const config = {
     "/team/:path*",
     "/settings/:path*",
     "/login",
+    "/signup",
+    "/forgot-password",
+    "/reset-password",
   ],
 };
