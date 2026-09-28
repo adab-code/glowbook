@@ -43,8 +43,8 @@ Shared: the appointment booking flow (FR-017 → FR-024) is co-owned — the API
   The [`README.md`](https://github.com/adab-code/glowbook/blob/main/README.md) lists both team members (Iván Chulde and Aaron Daniel Alfaro Barra) with their focus areas, plus the feature list, tech stack, local setup steps, Vercel deployment steps, environment-variable table, project structure, and the full API endpoint documentation.
 
 - **Local development screenshot:**
-  ![VS Code with the project running locally — npm run dev visible and the browser showing localhost:3000](./images/w03-local-setup.png)
-  What the screenshot shows: the `glowbook` repository cloned in VS Code, the terminal running `npm run dev` with the Next.js ready banner on port 3000, and the browser at `http://localhost:3000` rendering the app.
+  ![VS Code–style IDE with the glowbook project open, npm run dev in the terminal, and the GlowBook login page in the integrated browser preview](./images/w03-local-setup.png)
+  What the screenshot shows: an IDE window (VS Code–style editor) with the `glowbook` project open, laid out in three panels. **Left** — the project file explorer with the active git branch. **Centre** — an integrated browser preview loaded at `http://localhost:3000/login`, rendering the GlowBook sign-in screen (the pink GlowBook logo, the "Welcome back" heading, the Email and Password fields, and the "Sign in" button). **Right** — a command terminal running `npm run dev`, showing the `next dev` output: Next.js 16.3.5 on Turbopack, the local server at `http://localhost:3000`, the loaded `.env`, and the "Ready" state.
 
 - **GitHub Project Board (with issues and the Week 04 milestone):** https://github.com/users/adab-code/projects/2
 
