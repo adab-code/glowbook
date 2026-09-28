@@ -44,7 +44,6 @@ Shared: the appointment booking flow (FR-017 → FR-024) is co-owned — the API
 
 - **Local development screenshot:**
   ![VS Code with the project running locally — npm run dev visible and the browser showing localhost:3000](./images/w03-local-setup.png)
-  ‹‹PASTE SCREENSHOT HERE WHEN PUSHED TO THE REPO — Canvas is a text box, so insert the image directly into the Canvas entry as well.››
   What the screenshot shows: the `glowbook` repository cloned in VS Code, the terminal running `npm run dev` with the Next.js ready banner on port 3000, and the browser at `http://localhost:3000` rendering the app.
 
 - **GitHub Project Board (with issues and the Week 04 milestone):** https://github.com/users/adab-code/projects/2
