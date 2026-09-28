@@ -152,6 +152,7 @@ Full specification with token values: [`docs/design-system.md`](https://github.c
 **Pull Request reviewed:** https://github.com/ivanchulde/sacrament-meetings/pull/1
 
 - **Repository (assigned teammate's):** https://github.com/ivanchulde/sacrament-meetings
+- **Pull Request URL:** https://github.com/ivanchulde/sacrament-meetings/pull/1
 - **PR title:** Complete Sacrament Meeting Planner
 - **Branch:** `peer-code-review` → `main` · 4 commits · 19 files changed · +846 / −97
 - **Preview deployment:** Vercel deployed the branch successfully; all checks passed, no conflicts with the base branch
