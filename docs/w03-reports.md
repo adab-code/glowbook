@@ -15,10 +15,10 @@ Week 03 deliverables: team meeting summary, project setup evidence, architecture
 ### Major decisions made
 
 1. **Specification reviewed and confirmed.** We walked through [`docs/glowbook-spec.md`](https://github.com/adab-code/glowbook/blob/main/docs/glowbook-spec.md) story by story. Scope stayed at five user stories: account access, service catalog, client profiles, appointment calendar, daily dashboard. We added the two sections the Week 02 draft was missing — **Technical Requirements** and **Assumptions** — and explicitly pushed payments, client-facing self-booking, reminders, recurring appointments, and a month calendar view into a **Phase 2 backlog**. No functional requirement was cut.
-2. **Database: PostgreSQL on Supabase, accessed with Prisma.** Chosen over MongoDB because the domain is relational (an appointment must always resolve to a real client, service, and studio) and Supabase is explicitly approved by the course. We use the pooled connection string at runtime and the direct one for migrations so Vercel's serverless functions do not exhaust connections.
+2. **Database: PostgreSQL, accessed with Prisma 7.** Chosen over MongoDB because the domain is relational (an appointment must always resolve to a real client, service, and studio) and PostgreSQL is explicitly approved by the course. A local PostgreSQL 18 instance serves development; the managed Supabase project is prepared for deployment, where the pooled connection string is used at runtime and the direct one for migrations so Vercel's serverless functions do not exhaust connections.
 3. **Authentication: Auth.js v5 with the Credentials provider.** We considered Clerk and chose Auth.js because GlowBook needs studio tenancy and staff invites — identity has to live in *our* `Account` / `StaffUser` tables so we can enforce the isolation rules ourselves. Duplicate-email and generic "invalid email or password" behaviour is enforced in `authorize()`.
 4. **Component architecture agreed** (recorded in [`docs/architecture.md`](https://github.com/adab-code/glowbook/blob/main/docs/architecture.md)). Two route groups — `(auth)` for public pages and `(app)` for the authenticated shell — plus a `proxy.ts` guard. Data flows one way: route handler → Prisma → server component → client component state, with no client-side fetching library. Roughly 40 components planned across layout, shared, feature, and UI layers (22 built as of this submission); no feature folder may import from another feature folder.
-5. **Design and branding agreed** (recorded in [`docs/design-system.md`](https://github.com/adab-code/glowbook/blob/main/docs/design-system.md)): a warm "Glow Rose / Studio Gold / Warm Stone" palette, **Geist Sans** for UI with **Fraunces** for display headings, a 4px spacing scale, 44px minimum touch targets, and **shadcn/ui** as the shared component library on top of Tailwind v4 tokens.
+5. **Design and branding agreed** (recorded in [`docs/design-system.md`](https://github.com/adab-code/glowbook/blob/main/docs/design-system.md)): a warm "Glow Rose / Studio Gold / Warm Stone" palette, **Geist Sans** for UI with **Fraunces** for display headings, a 4px spacing scale, and 44px minimum touch targets. **shadcn/ui was chosen as the shared component library** for Week 04 on top of Tailwind v4 tokens; the primitives built so far are hand-rolled on `class-variance-authority` and Radix and follow shadcn's structure, so the migration is additive rather than a rewrite.
 6. **Data model agreed** (recorded in [`docs/data-model.md`](https://github.com/adab-code/glowbook/blob/main/docs/data-model.md)): eight entities with money stored as integer cents, appointments carrying a `priceCentsTotal` snapshot, `Restrict` on deletes that would orphan history, and `accountId` on every tenant-scoped table.
 7. **Branching workflow practised and formalised.** `main` is protected — no direct pushes. Branch names are `feat/<slug>`, `fix/<slug>`, `docs/<slug>`. Every change lands through a pull request with at least one approving review from the other member and a 24-hour turnaround expectation. We ran the full loop live in the meeting: branch → commit → push → PR → review → merge.
 8. **Board updated.** The project board now carries the issues split into frontend, backend, and infrastructure work, each 4–8 hours with a single owner, and the highest-priority P1 issues are attached to a **Week 04 milestone**.
@@ -48,18 +48,20 @@ Shared: the appointment booking flow (FR-017 → FR-024) is co-owned — the API
 
 - **GitHub Project Board (with issues and the Week 04 milestone):** https://github.com/users/adab-code/projects/2
 
-  | # | Issue | Area | Label | Milestone |
+  | # | Issue | Area | Milestone | State at submission |
   |---|---|---|---|---|
-  | 1 | Scaffold Next.js project with App Router, TypeScript and Tailwind | Setup | frontend | — |
-  | 3 | Design database schema and seed data: Account, StaffUser, Client, Service, Appointment | Data | backend | **Week 04** |
-  | 2 | Implement authentication: sign up, sign in, sign out, password reset | Auth | backend | **Week 04** |
-  | 4 | Service catalog CRUD with validation and delete confirmation | Feature | backend | **Week 04** |
-  | 5 | Client profiles CRUD with notes and appointment history | Feature | backend | **Week 04** |
-  | 6 | Appointment calendar: create, view, edit, cancel and overlap warning | Feature | backend | — |
-  | 7 | Daily dashboard with today's and upcoming appointments | Feature | frontend | — |
-  | 8 | Deploy application to Vercel with environment variables configured | Infra | infra | — |
+  | 1 | Scaffold Next.js project with App Router, TypeScript and Tailwind | Setup | **Week 04** | Done — 18 app routes build |
+  | 3 | Design database schema and seed data: Account, StaffUser, Client, Service, Appointment | Data | **Week 04** | Done — 8 models, migration committed, seed verified |
+  | 2 | Implement authentication: sign up, sign in, sign out, password reset | Auth | **Week 04** | Done — Credentials sign-in, session tenancy claims, route gate |
+  | 4 | Service catalog CRUD with validation and delete confirmation | Feature | **Week 04** | Done — archive-or-delete on referenced services |
+  | 5 | Client profiles CRUD with notes and appointment history | Feature | **Week 04** | Done — refuses archiving while future appointments exist |
+  | 6 | Appointment calendar: create, view, edit, cancel and overlap warning | Feature | — | Not started — next slice |
+  | 7 | Daily dashboard with today's and upcoming appointments | Feature | — | Done — four metrics plus the next five appointments |
+  | 8 | Deploy application to Vercel with environment variables configured | Infra | — | Not started |
 
-  Eight issues, each scoped to 4–8 hours with a single primary owner, split into frontend, backend, and infrastructure work. The five P1 issues above are attached to the **Week 04** milestone; the remaining three are deliberately left out of the milestone as later sprint work.
+  Eight issues, each scoped to 4–8 hours, split into setup, data, auth, feature, and infrastructure work. **Five issues carry the Week 04 milestone** — #1 through #5, the P1 set — and the remaining three are deliberately left out of the milestone as later sprint work. The *Area* column is a grouping used in this report; on the board the split is carried by the issue title prefixes `frontend:`, `backend:`, and `infra:`.
+
+  Five of the eight issues were complete at the time of this submission and had reached `main` through pull requests #9–#18. Issue #6, the appointment calendar, is the only piece of Week 04 work not started, and it leads the next sprint.
 
 - **Supporting planning documents added this week** (all in the repository):
   - Component architecture: [`docs/architecture.md`](https://github.com/adab-code/glowbook/blob/main/docs/architecture.md)
@@ -94,10 +96,87 @@ erDiagram
     ACCOUNT ||--o{ SERVICE : "offers"
     ACCOUNT ||--o{ APPOINTMENT : "books"
     STAFF_USER ||--o{ APPOINTMENT : "performs"
+    STAFF_USER ||--o{ STAFF_INVITE : "accepts"
+    STAFF_USER ||--o{ PASSWORD_RESET_TOKEN : "requests"
     CLIENT ||--o{ APPOINTMENT : "books"
     APPOINTMENT ||--|{ APPOINTMENT_SERVICE : "includes"
     SERVICE ||--o{ APPOINTMENT_SERVICE : "booked in"
-    STAFF_USER ||--o{ PASSWORD_RESET_TOKEN : "requests"
+
+    ACCOUNT {
+        uuid id PK
+        string studioName
+        string slug UK
+        string timezone "IANA name"
+        string currency "ISO 4217"
+        boolean onboardingComplete
+    }
+
+    STAFF_USER {
+        uuid id PK
+        uuid accountId FK
+        string email UK
+        string passwordHash "bcrypt, nullable while invite pending"
+        enum role "OWNER or STAFF"
+        string firstName
+        string lastName
+        string phone
+        boolean isActive
+    }
+
+    STAFF_INVITE {
+        uuid id PK
+        uuid accountId FK
+        uuid acceptedById FK
+        string email
+        enum role "OWNER or STAFF"
+        string token UK "hashed at rest, 7 day expiry"
+    }
+
+    CLIENT {
+        uuid id PK
+        uuid accountId FK
+        string firstName
+        string lastName
+        string email
+        string phone
+        string notes "allergies and preferences"
+        boolean isArchived
+    }
+
+    SERVICE {
+        uuid id PK
+        uuid accountId FK
+        string name
+        string description
+        int priceCents "integer cents, never a float"
+        int durationMinutes
+        boolean isActive
+    }
+
+    APPOINTMENT {
+        uuid id PK
+        uuid accountId FK
+        uuid clientId FK
+        uuid staffUserId FK "nullable"
+        datetime startsAt
+        datetime endsAt "derived from service durations"
+        enum status "SCHEDULED, COMPLETED, CANCELLED, NO_SHOW"
+        string cancellationReason
+        int priceCentsTotal "snapshot at booking time"
+    }
+
+    APPOINTMENT_SERVICE {
+        uuid appointmentId PK,FK
+        uuid serviceId PK,FK
+    }
+
+    PASSWORD_RESET_TOKEN {
+        uuid id PK
+        uuid staffUserId FK
+        string tokenHash UK "hashed at rest"
+        datetime expiresAt "1 hour"
+        datetime usedAt "single use"
+    }
 ```
 
 **Relationship decisions the team made:**
@@ -105,9 +184,21 @@ erDiagram
 - **`Account` is the isolation boundary.** Every tenant-scoped table carries `accountId`, and every query takes it from the session — never from user input. A record belonging to another studio returns `404`, not `403`, so IDs cannot be probed.
 - **Appointment ↔ Service is many-to-many** through `AppointmentService` with a composite primary key, so one booking can cover several services (for example a lash fill plus a brow tint) and duplicate selections are impossible.
 - **`Appointment.endsAt` is derived** from the selected services' `durationMinutes`, and **`priceCentsTotal` is a snapshot** taken at booking time, so editing a service price later never rewrites appointment history.
-- **Delete policy:** deleting a studio cascades. Deleting a client or service that is referenced by appointments is `Restrict` and returns `409` so the UI can warn and ask for confirmation. Removing a staff member `SetNull`s their appointments, which become unassigned rather than vanishing.
-- **Money is integer cents** and **timestamps are `timestamptz`** so calendar range queries and overlap checks are correct across timezones.
+- **Delete policy:** deleting a studio cascades. A client or service referenced by appointments is protected at the schema level with `Restrict`, and the API handles it by archiving (`isArchived` / `isActive = false`) and returning `meta.archived` with an explanation, so the UI can warn and ask for confirmation rather than surfacing a raw constraint error. A service with no references is hard-deleted. Removing a staff member `SetNull`s their appointments, which become unassigned rather than vanishing.
+- **Money is integer cents**, never a float, so totals never drift by a rounding error. **Timestamps are currently `timestamp(3)` without a time zone.** Each `Account` stores its own IANA `timezone` and every appointment time is rendered through that zone, but the stored values are naive — the appointment calendar scheduled for the next sprint must convert the studio's day boundary into that zone before it can run overlap checks safely across a daylight-saving change. This is tracked as the first follow-up to Week 04 rather than described as already correct.
 - **Indexes** on `StaffUser.email` (unique), `Client(accountId, lastName)`, `Service(accountId, isActive)`, `Appointment(accountId, startsAt)`, `Appointment(staffUserId, startsAt, endsAt)`, and `Appointment(clientId, startsAt)`.
+
+**Referential integrity at a glance** — every foreign key in the schema, and what happens when the parent row is deleted:
+
+| Child table | Parent | `onDelete` | Why |
+|---|---|---|---|
+| `StaffUser`, `StaffInvite`, `Client`, `Service`, `Appointment` | `Account` | `Cascade` | A studio owns its records outright; deleting the studio removes them together |
+| `Appointment` | `Client` | `Restrict` | Appointment history is the reason the record is kept, so the API archives instead of erroring |
+| `AppointmentService` | `Service` | `Restrict` | A service named in a booking cannot vanish from it |
+| `AppointmentService` | `Appointment` | `Cascade` | The bridge rows have no meaning without their appointment |
+| `Appointment` | `StaffUser` | `SetNull` | Removing a staff member leaves the booking, unassigned, rather than deleting it |
+| `StaffInvite` | `StaffUser` | `SetNull` | The invitation stays as a record of who accepted it |
+| `PasswordResetToken` | `StaffUser` | `Cascade` | A reset link is meaningless without the account it resets |
 
 ### 3.2 Design planning
 
@@ -137,10 +228,10 @@ Full specification with token values: [`docs/design-system.md`](https://github.c
 
 - **4px base scale** using Tailwind's default steps, applied semantically: page gutter `px-4 sm:px-6 lg:px-8` · `space-y-4` between form fields · `gap-6` between cards · `space-y-8` between page sections · `p-4 sm:p-6` card padding · `gap-2` between an icon and its label · `gap-1 p-2` inside dense calendar blocks.
 - **App shell:** CSS grid — fixed `w-64` sidebar at `lg` and above, sticky `h-16` topbar, independently scrolling content, content capped at `max-w-7xl`.
-- **Mobile-first.** Below `lg` the sidebar becomes a shadcn `Sheet` from a hamburger in the topbar. `DataTable` falls back to stacked cards on small screens so nothing ever scrolls horizontally. 375px is the primary design target.
+- **Mobile-first.** Below `lg` the sidebar collapses behind a hamburger in the topbar, using a Radix Dialog so focus is trapped and `Escape` closes it. Tables fall back to stacked cards on small screens so nothing ever scrolls horizontally. 375px is the primary design target.
 - **Radii and elevation:** `0.5rem` controls, `1rem` cards, `rounded-full` badges; `shadow-xs` at rest → `shadow-sm` on hover → `shadow-md` for popovers and dialogs.
 - **Motion:** 150ms hover, 200ms panels, 300ms page fades, all `ease-out` and wrapped in `motion-reduce` variants.
-- **Shared UI library:** shadcn/ui (Button, Input, Label, Textarea, Select, Dialog, AlertDialog, DropdownMenu, Table, Badge, Card, Calendar, Popover, Skeleton, Toast) with CSS variables mapped onto our scales, plus a `components.json` so both members install identical primitives.
+- **Shared UI library:** shadcn/ui (Button, Input, Label, Textarea, Select, Dialog, AlertDialog, DropdownMenu, Table, Badge, Card, Calendar, Popover, Skeleton, Toast) with CSS variables mapped onto our scales, plus a `components.json` so both members install identical primitives. **At submission, four of those primitives exist** — `button`, `card`, `input`, `label` — in `src/components/ui/`, with `components.json` still to be added so a second member installs the same versions. Seven shared components (`confirm-dialog`, `empty-state`, `form-field`, `page-header`, `spinner`, `status-badge`, `submit-button`) cover the dialog, form, status, and empty-state work that shadcn would otherwise supply.
 
 **Component architecture summary:** two route groups (`(auth)`, `(app)`) plus `src/proxy.ts` for auth interception. The architecture the team agreed in Week 03 plans 5 layout components, 8 shared components, ~19 feature components across `auth`/`dashboard`/`calendar`/`clients`/`services`/`staff`, and 14 UI primitives.
 
