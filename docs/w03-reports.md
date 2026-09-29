@@ -40,7 +40,7 @@ Shared: the appointment booking flow (FR-017 → FR-024) is co-owned — the API
 ## 2. Project Setup
 
 - **Team public GitHub repository:** https://github.com/adab-code/glowbook
-  The [`README.md`](https://github.com/adab-code/glowbook/blob/main/README.md) lists both team members (Iván Chulde and Aaron Daniel Alfaro Barra) with their focus areas, plus the feature list, tech stack, local setup steps, Vercel deployment steps, environment-variable table, project structure, and the full API endpoint documentation.
+  The [`README.md`](https://github.com/adab-code/glowbook/blob/main/README.md) lists both team members (Iván Chulde and Aaron Daniel Alfaro Barra) with their focus areas, plus the feature list, tech stack, local setup steps, deployment steps, environment-variable table, project structure, and the full API endpoint documentation.
 
 - **Local development screenshot:**
   ![VS Code–style IDE with the glowbook project open, npm run dev in the terminal, and the GlowBook login page in the integrated browser preview](./images/w03-local-setup.png)
