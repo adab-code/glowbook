@@ -74,7 +74,9 @@ Appointment status is **never communicated by colour alone** — `StatusBadge` a
 
 ### 2.5 Tailwind v4 token block
 
-Paste into `src/app/globals.css`. shadcn/ui is configured with `cssVariables: true`, so its `--background` / `--primary` / `--border` variables map onto these scales.
+Paste into `src/app/globals.css`. These are the real values in the file today, and the components consume them directly as `brand-*`, `accent-*` and `neutral-*` Tailwind utilities.
+
+**One caveat.** `globals.css` also declares a shadcn-style block of semantic variables — `--background`, `--foreground`, `--card`, `--border`, `--input`, `--ring`, `--muted`, `--muted-foreground` — with a comment saying shadcn components read them. They do not: no component references a single one, and there is no `--primary`, which the shadcn schema expects. They exist so a future `shadcn add` has somewhere to land. Either wire them up or delete them, but do not describe them as in use.
 
 ```css
 @import "tailwindcss";
@@ -140,8 +142,8 @@ Dark mode is class-based (`<html class="dark">`); the dark set is `neutral-950` 
 | Role | Family | Source | Why |
 |---|---|---|---|
 | Body / UI | **Geist Sans** | `next/font/google` (already installed) | Excellent legibility at 14–16px, variable weight, neutral so it never competes with the brand |
-| Display / page titles | **Fraunces** | `next/font/google`, variable, `opsz` axis | A soft, warm serif that signals "boutique studio" instead of "enterprise dashboard"; used only above 24px |
-| Times / numbers | Geist with `tabular-nums` | utility class | Calendar times and prices must not shift width as digits change |
+| Display / page titles | **Fraunces** | `next/font/google`, variable, `opsz` axis | A soft, warm serif that signals "boutique studio" instead of "enterprise dashboard". `globals.css` applies `font-display` to every `h1` and `h2` regardless of size, so the "only above 24px" intent below is not enforced — `CardTitle` renders an `h2` at `text-lg` (18px) |
+| Times / numbers | Geist with `tabular-nums` | utility class | Calendar times and prices must not shift width as digits change. **Not yet applied** — `tabular-nums` appears nowhere in `src/`, so the rule is stated but not implemented |
 
 ### Type scale (mobile → desktop, `clamp()` where marked)
 
@@ -179,7 +181,7 @@ export const fonts = {
 
 | Context | Utility | Value |
 |---|---|---|
-| Page gutter | `px-4 sm:px-6 lg:px-8` | 16 / 24 / 32px |
+| Page gutter | `px-4 sm:px-6` | 16 / 24px — the built layout stops at `sm`; the `lg:px-8` step in the table below is not applied |
 | Between form fields | `space-y-4` | 16px |
 | Between cards in a grid | `gap-6` | 24px |
 | Between page sections | `space-y-8` | 32px |
@@ -193,10 +195,10 @@ export const fonts = {
 
 | Pattern | Rule |
 |---|---|
-| Content width | `mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8` |
-| App shell | CSS grid: sidebar `w-64` fixed ≥`lg`, `Topbar` sticky `h-16`, content scrolls independently |
-| Mobile navigation | Below `lg` the sidebar becomes a shadcn `Sheet` opened from a hamburger in the `Topbar` |
-| Forms | One column, `max-w-lg`; field label above input, error below in `text-sm text-danger` |
+| Content width | `px-4 sm:px-6` — the planned `max-w-7xl` cap is **not applied**, so long-form pages run the full width of the content column |
+| App shell | Flex row: sidebar `w-60` fixed ≥`md`, header above the content, page scrolls as a whole. There is no independent content scroller, and no `AppShell` component — the shell is inline in `src/app/(app)/layout.tsx` |
+| Mobile navigation | **Not built, and the current fallback breaks a MUST.** The plan was a shadcn `Sheet` behind a hamburger below `lg`. What exists instead is a horizontal nav strip with `overflow-x-auto` in the header (`app-header.tsx:54`). Constitution §IV requires every view to work without horizontal scrolling, so this is an open accessibility bug, not a styling preference |
+| Forms | One column, but **no `max-w-lg`** — the built forms use `space-y-4` with no width cap; label above input, error below in `text-sm text-danger` |
 | Lists vs tables | `DataTable` on ≥`md`; on mobile it renders stacked `Card`s with label/value rows — never a horizontally scrolling table |
 | Page structure | `PageHeader` (title + description + primary action) → optional toolbar/filters → content → pagination |
 | Density | Comfortable by default; the calendar is the only dense surface |
@@ -223,7 +225,7 @@ Mobile-first. `sm 640` · `md 768` · `lg 1024` (sidebar appears, 2-column grids
 
 ## 5. Component recipes
 
-shadcn/ui primitives (in `src/components/ui/`) are used unmodified wherever possible; these are the only GlowBook-specific variants layered on top.
+The four primitives in `src/components/ui/` follow shadcn's *conventions* — `cn()`, `cva` variants, `data-slot` attributes, the same Radix primitives — but they are hand-built and deliberately diverge: `button` uses `primary`/`danger` variants where shadcn uses `default`/`destructive`, and the colours come from this project's warm scale rather than a shadcn base colour. The variants below are GlowBook-specific on purpose, not "layered on" an unmodified shadcn base.
 
 ```ts
 // button.tsx variants — cva
@@ -250,12 +252,12 @@ const buttonVariants = cva(base, {
 | Component | Convention |
 |---|---|
 | `FormField` | `Label` (label token) → control → `FormMessage` (`text-danger`, `role="alert"`) → optional `FormDescription`. The control's `id` is wired to the label via `htmlFor`/`id` |
-| `StatusBadge` | `rounded-full px-2 py-0.5 text-caption` + coloured dot + uppercase label. Scheduled `info`, Completed `success`, Cancelled `danger`, No-show `warning` |
-| `EmptyState` | Centred `max-w-sm`, `neutral-400` icon in a `brand-50` circle, one-sentence message, primary CTA, `py-16` |
+| `StatusBadge` | `rounded-full px-2 py-0.5 text-caption` + coloured dot, **sentence case rather than uppercase**. Scheduled `info`, Completed `success`, Cancelled `danger`, No-show `warning` |
+| `EmptyState` | Centred `max-w-sm`, `text-brand-500` icon in a `brand-50` circle, one-sentence message, primary CTA, `py-16`. The icon also uses decorative glyphs (`✦ ▤ ◍ ◉ ⚙`) in place of an icon set, since no icon library is installed |
 | `ConfirmDialog` | shadcn `AlertDialog`. Destructive confirm button is `variant="danger"` and the copy names the record and the consequence |
 | `DataTable` | `min-w-0` columns, `text-body-sm`, row hover `bg-neutral-50`, sticky `Topbar`-level header, mobile fallback to `Card` list |
 | `PageSkeleton` | `animate-pulse` blocks matching the final layout's box sizes so nothing shifts on load |
-| Focus ring | `focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2` on every interactive element |
+| Focus ring | `focus-visible:ring-2 focus-visible:ring-brand-500` on every interactive element — **`ring-offset-2` is not applied** anywhere, and `globals.css` also sets a global `outline: 2px solid` that competes with it |
 
 ---
 

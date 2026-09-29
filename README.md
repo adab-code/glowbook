@@ -243,7 +243,6 @@ Sign-up, sign-out, and password reset are React Server Actions in `src/lib/auth/
 - Every change lands through a pull request with at least one approving review from another team member.
 - Commit small and often; PRs should stay under ~200 changed lines so reviews take 15–20 minutes.
 - Formatting is Prettier (`.prettierrc`): run `npx prettier --write .` before committing. `npm run typecheck`, `npm run lint`, and `npx prettier --check .` must all pass before requesting review.
-- [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs exactly those four checks on every pull request and on pushes to `main`, so a green PR badge is the same signal as passing them locally. It needs no database.
 - Team conventions and the governance rules we agreed on live in [`.specify/memory/constitution.md`](.specify/memory/constitution.md).
 
 ---
@@ -259,7 +258,7 @@ Sign-up, sign-out, and password reset are React Server Actions in `src/lib/auth/
 
 **Known limitations of what is built:**
 
-- Overlap detection will be application-level, not a Postgres exclusion constraint on `tstzrange`. That is race-proof and is deferred to Phase 2.
+- Overlap detection is planned as an application-level check rather than a Postgres `EXCLUDE USING gist` constraint on `tstzrange`. That check is **not** race-proof: two requests submitted at the same instant can both pass it, so the constraint is the durable fix and should land with the booking handler.
 - The dashboard's "today" and "this week" windows are computed in server-local time rather than the studio's `Account.timezone`, so a UTC host reports the wrong day boundary for studios outside UTC. Times are still rendered through `formatTime(..., timezone)`.
 - Password-reset links are printed to the server console rather than emailed — there is no mail provider wired up yet.
 - Single-day schedule view only; a month view and drag-to-reschedule are Phase 2.
