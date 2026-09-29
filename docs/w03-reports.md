@@ -57,7 +57,7 @@ Shared: the appointment booking flow (FR-017 → FR-024) is co-owned — the API
   | 5 | Client profiles CRUD with notes and appointment history | Feature | **Week 04** | Done — refuses archiving while future appointments exist |
   | 6 | Appointment calendar: create, view, edit, cancel and overlap warning | Feature | — | Not started — next slice |
   | 7 | Daily dashboard with today's and upcoming appointments | Feature | — | Done — four metrics plus the next five appointments |
-  | 8 | Deploy application to Vercel with environment variables configured | Infra | — | Not started |
+  | 8 | Deploy application to Render with environment variables configured | Infra | — | Not started |
 
   Eight issues, each scoped to 4–8 hours, split into setup, data, auth, feature, and infrastructure work. **Five issues carry the Week 04 milestone** — #1 through #5, the P1 set — and the remaining three are deliberately left out of the milestone as later sprint work. The *Area* column is a grouping used in this report; on the board the split is carried by the issue title prefixes `frontend:`, `backend:`, and `infra:`.
 

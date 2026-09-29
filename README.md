@@ -2,7 +2,7 @@
 
 Booking and client management for independent beauty professionals and small studios — lash technicians, hairstylists, nail artists, and estheticians. One place to schedule appointments, keep client history and notes, and manage the services a studio offers, replacing the WhatsApp/Instagram-DM juggling and paper notebooks these businesses run on today.
 
-**Stack:** Next.js 16 (App Router) · React 19 · TypeScript (strict) · Tailwind CSS v4 · PostgreSQL (Supabase) + Prisma · Auth.js v5 · shadcn/ui · Vercel
+**Stack:** Next.js 16 (App Router) · React 19 · TypeScript (strict) · Tailwind CSS v4 · PostgreSQL (Render) + Prisma · Auth.js v5 · shadcn/ui · Vercel
 
 ---
 
@@ -34,9 +34,9 @@ The MVP scope comes from [`docs/glowbook-spec.md`](docs/glowbook-spec.md) and is
 | Framework | Next.js 16, App Router | Course requirement; file-based routing, server components by default |
 | Language | TypeScript 5, `strict: true` | Course requirement; no `any` in our code |
 | Styling | Tailwind CSS v4 + shadcn/ui | Utility-first, shared component library, design tokens in `@theme` |
-| Database | PostgreSQL (Supabase) + Prisma | Relational integrity across studios, clients, services, appointments |
+| Database | PostgreSQL (Render free tier) + Prisma | Relational integrity across studios, clients, services, appointments |
 | Auth | Auth.js v5, Credentials provider | Course default; keeps identity in our own `Account`/`StaffUser` tables |
-| Hosting | Vercel | Course requirement; env-var configured deploys |
+| Hosting | Render | Course allows "Vercel or similar"; chosen for familiarity. See the [free tier limits](#free-tier-limits--read-this-before-you-grade) before relying on a deploy |
 
 ---
 
@@ -44,10 +44,10 @@ The MVP scope comes from [`docs/glowbook-spec.md`](docs/glowbook-spec.md) and is
 
 ### Prerequisites
 
-- Node.js 20+ (developed on Node 24)
+- Node.js 20+ (developed and pinned on Node 24)
 - npm 10+
-- A Supabase project (free tier is enough) for the PostgreSQL connection strings
-- A Vercel account for deployment
+- A Render account for both the web service and the PostgreSQL instance
+- For local development, a PostgreSQL 18 database (local server or any managed instance)
 
 ### 1. Clone and install
 
@@ -67,10 +67,10 @@ cp .env.example .env.local
 
 | Variable | Purpose |
 |---|---|
-| `DATABASE_URL` | Pooled PostgreSQL connection string used by the app at runtime (serverless-safe) |
-| `DIRECT_URL` | Direct (non-pooled) connection string used by Prisma migrations |
+| `DATABASE_URL` | PostgreSQL connection string the app uses at runtime. On Render this is the instance's **Internal Database URL**; locally it points at `localhost:5432` |
+| `DIRECT_URL` | Direct connection string used by Prisma migrations. On Render use the same internal URL, since Render does not expose a separate pooler on the free tier |
 | `AUTH_SECRET` | Secret used by Auth.js to sign session cookies (`npx auth secret` to generate) |
-| `AUTH_TRUST_HOST` | Set to `true` when deploying behind Vercel so Auth.js trusts the host |
+| `AUTH_TRUST_HOST` | Set to `true` on Render so Auth.js trusts the `X-Forwarded-Host` header from Render's proxy |
 
 Never commit `.env.local` — `.gitignore` already excludes `.env*`.
 
@@ -108,13 +108,46 @@ npm run lint         # ESLint
 
 ---
 
-## Deploying to Vercel
+## Deploying to Render
 
-1. Import the repository at [vercel.com/new](https://vercel.com/new) (Framework Preset: **Next.js**).
-2. Add the environment variables from the table above under **Project → Settings → Environment Variables** for all three environments.
-3. Deploy. Vercel runs `npm run build` and serves the App Router output.
+The course constitution allows "Vercel or similar", so this project is hosted on **Render**, as a Web Service.
 
-Database migrations are **not** run on every deploy — run `npx prisma migrate deploy` from a local machine or a CI job against the production `DIRECT_URL` when a migration is added.
+1. Create the database first: **New → Postgres**. Name it, pick the region closest to your users, and choose the **Free** plan. Copy the **Internal Database URL**.
+2. Create the app: **New → Web Service**, connected to this repository. Render detects Node.js from the `engines` field in `package.json`.
+3. Use these settings:
+
+   | Setting | Value |
+   |---|---|
+   | Build command | `npm ci && npm run build` |
+   | Start command | `npm run start` |
+   | Node version | from `engines` in `package.json` (24) |
+   | Health check path | `/login` |
+
+4. Add the environment variables under **Environment** for the web service: `DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET`, `AUTH_TRUST_HOST=true`.
+5. In the **Postgres** instance settings, open **Access** and add the web service. Without this the service cannot reach the database over Render's internal network.
+6. Run migrations once against the production database — Render will not do it for you:
+
+   ```bash
+   # from a local machine, with DATABASE_URL pointed at the Render instance
+   npx prisma migrate deploy
+   npx prisma db seed          # optional: demo studio, services, and a login
+   ```
+
+### Free tier limits — read this before you grade
+
+Render's free tier is a **development tier, not a production tier**, and Render's own documentation says not to use it for production applications. We use it deliberately, so the limits are written down rather than discovered:
+
+| Limit | What it means for this project |
+|---|---|
+| **The database expires after 30 days** | The free Postgres instance is deleted when it expires, and the deployed app stops resolving queries. To restore, create a new instance, redeploy, and re-run migrations. Nothing in the code depends on Render hosting the database — the schema lives in `prisma/migrations/`, so this is a re-provision, not a rewrite. |
+| **The web service spins down after 15 minutes idle** | The first request after an idle period takes roughly a minute while Render restarts the container. Expect a slow first load, not an error. |
+| **No `pre-deploy` command on the free plan** | Render only offers a pre-deploy hook on paid web services, so `prisma migrate deploy` cannot be automated as part of a deploy. It is a manual step, listed above. |
+| **750 instance hours per month** | One web service and one database fit inside this allowance. |
+| **Deploys restart on git push to the connected branch** | Every merge to `main` triggers a build. A build failure leaves the previous version serving traffic. |
+
+The first three are the ones that will actually affect a reviewer. A mid-session deadline landing on day 31 is the realistic failure mode for this setup.
+
+If this project ever needs to be genuinely live, the minimum fix is a paid Render Postgres instance; nothing else about the deployment changes.
 
 ---
 

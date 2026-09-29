@@ -11,10 +11,13 @@ GlowBook is a booking and client management web app for independent beauty profe
 - **Next.js 16** with the App Router — React Server Components by default, `"use client"` only where interactivity is required
 - **React 19**, **TypeScript 5** in `strict` mode
 - **Tailwind CSS v4** (CSS-first `@theme` tokens in `src/app/globals.css`) with **shadcn/ui** primitives in `src/components/ui/`
-- **PostgreSQL (Supabase)** accessed through **Prisma 7** with the `prisma-client` generator and the `@prisma/adapter-pg` driver adapter — all queries live in `src/lib/`, never in components
+- **PostgreSQL (Render free tier)** accessed through **Prisma 7** with the `prisma-client` generator and the `@prisma/adapter-pg` driver adapter — all queries live in `src/lib/`, never in components
 - **Auth.js v5** with the Credentials provider
 - **Zod** for request validation, shared between client forms and route handlers
-- Deployed on **Vercel**
+- Deployed on **Render** as a Web Service; the free tier is a development tier with
+  real limits — the Postgres instance expires after 30 days, the web service spins down
+  after 15 minutes idle, and there is no automatic `pre-deploy` migration hook. See the
+  "Free tier limits" section of `README.md`.
 
 ## Architecture rules
 
