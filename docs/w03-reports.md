@@ -50,7 +50,7 @@ Shared: the appointment booking flow (FR-017 → FR-024) is co-owned — the API
 
   | # | Issue | Owner | Milestone | State at submission |
   |---|---|---|---|---|
-  | 1 | Scaffold Next.js project with App Router, TypeScript and Tailwind | Iván | **Week 04** | Done — 18 app routes build |
+  | 1 | Scaffold Next.js project with App Router, TypeScript and Tailwind | Iván | **Week 04** | Done — 17 app routes (12 pages + 5 route handlers) |
   | 3 | Design database schema and seed data: Account, StaffUser, Client, Service, Appointment | Aaron | **Week 04** | Done — 8 models, migration committed, seed verified |
   | 2 | Implement authentication: sign up, sign in, sign out, password reset | Aaron | **Week 04** | Done — Credentials sign-in, session tenancy claims, route gate |
   | 4 | Service catalog CRUD with validation and delete confirmation | Iván | **Week 04** | Done — archive-or-delete on referenced services |
@@ -59,7 +59,9 @@ Shared: the appointment booking flow (FR-017 → FR-024) is co-owned — the API
   | 7 | Daily dashboard with today's and upcoming appointments | Iván | — | Done — four metrics plus the next five appointments |
   | 8 | Deploy application to Render with environment variables configured | Both | — | Not started |
 
-  Eight issues, each scoped to 4–8 hours and assigned to an owner, split into setup, data, auth, feature, and infrastructure work. **Five issues carry the Week 04 milestone** — #1 through #5, the P1 set — and the remaining three are deliberately left out of the milestone as later sprint work. The *Owner* column matches the GitHub assignee on each issue. The *Area* grouping is carried on the board by the issue title prefixes `frontend:`, `backend:`, and `infra:`.
+  Eight issues, each scoped to 4–8 hours and split into setup, data, auth, feature, and infrastructure work. **Five issues carry the Week 04 milestone** — #1 through #5, the P1 set — and the remaining three are deliberately left out of the milestone as later sprint work. The *Area* grouping is carried on the board by the issue title prefixes `frontend:`, `backend:`, and `infra:`.
+
+The *Owner* column records the split we agreed in the meeting, and it is **not** currently mirrored by GitHub's assignee field. Iván's write invitation to the repository had not been accepted, so GitHub rejects the assignment without a warning — `gh issue edit --add-assignee` still exits 0 — and issues #1, #4, #5 and #7 therefore show no assignee on the board, while #2, #3, #6 and #8 are assigned to Aaron. Nothing is misassigned; the four are simply unassigned. Assigning them is the first step once the invitation goes through.
 
   Six of the eight issues were complete at the time of this submission and had reached `main` through pull requests #9–#18. Issue #6, the appointment calendar, is the only piece of Week 04 work not started, and it leads the next sprint.
 
