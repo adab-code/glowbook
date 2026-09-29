@@ -10,11 +10,11 @@
 | Decision | Choice | Rationale |
 |---|---|---|
 | Database | **PostgreSQL on Supabase** (managed, free tier) | Explicitly approved by the course. Relational integrity matters here: an appointment must always point at a real client, a real service, and a real studio. Supabase gives us a hosted Postgres, a connection pooler that survives Vercel's serverless model, and a GUI for inspecting data |
-| ORM | **Prisma 6** | Typed client generated from one schema file, migrations checked into the repo, and `prisma studio` for verifying seed data. Keeps every query type-checked under `strict` TypeScript |
+| ORM | **Prisma 7.10** | Typed client generated from one schema file, migrations checked into the repo, and `prisma studio` for verifying seed data. Keeps every query type-checked under `strict` TypeScript. On v7 the datasource block carries no `url` and the connection string, migrations path, and seed command live in `prisma7.config.ts` |
 | Auth | **Auth.js v5, Credentials provider** | Course default. Identity lives in our own tables so the studio tenancy rules (FR-006/FR-007) are enforced in our code, not delegated to a vendor |
 | IDs | **UUIDv7 via Prisma `@default(uuid())`** | Client-generatable and index-friendly; avoids sequential-ID enumeration on public endpoints |
 | Money | **Integer cents (`Int`), never floats** | `priceCents` avoids the rounding errors that `Decimal`/float pricing introduces in totals |
-| Time | **`DateTime` stored as `timestamptz`** | The calendar filters and overlap queries need timezone-aware comparisons |
+| Time | **`DateTime`, currently `timestamp(3)` without a time zone** | Every `Account` stores its own IANA `timezone` and all appointment times are rendered through it, but the stored values are naive. The calendar filters and overlap queries need timezone-aware comparisons, so the day boundary must be computed in the studio's zone before querying — tracked as the first follow-up to Week 04, before the appointment calendar is built |
 
 **Deployment note:** at runtime the app uses the pooled `DATABASE_URL` (Supabase pooler, port 6543, `pgbouncer=true`); `prisma migrate` uses the direct `DIRECT_URL`. Migrations are never run on Vercel at build time.
 
