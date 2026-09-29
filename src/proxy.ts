@@ -21,8 +21,15 @@ const AUTH_ROUTES = [
 /**
  * Optimistic gate only. Proxy runs on the edge and cannot reach the database, so
  * this just checks that a session cookie exists before rendering an (app) route.
- * The real, authoritative check happens in the (app) layout via `requireUser()`,
- * which throws a 401 for any request without a verified session.
+ * A forged or stale cookie gets past this point, so nothing here may be treated
+ * as an authorisation decision.
+ *
+ * The authoritative checks live further in, and they differ by request kind:
+ *   - rendered (app) pages: the (app) layout resolves the real session with
+ *     `auth()` and `redirect("/login")`, so a bad cookie lands on /login.
+ *   - API route handlers: `requireUser()` throws a 401.
+ * Both re-read the session, and `accountId` always comes from the session
+ * rather than from a body or route parameter.
  */
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

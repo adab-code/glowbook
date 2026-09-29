@@ -54,9 +54,19 @@ export function ServiceForm({
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSaving(true);
     setMessage(null);
     setFields({});
+
+    // `Number("")` is 0, and the server accepts `priceCents` of 0 because a
+    // free service is legitimate. That made a blank field indistinguishable
+    // from a deliberate 0 and silently stored a $0.00 service. Catch the blank
+    // case here, where we can still tell the user which field is wrong.
+    if (values.price.trim() === "") {
+      setFields({ priceCents: "Enter a price" });
+      return;
+    }
+
+    setSaving(true);
 
     try {
       // The form speaks dollars/minutes; the API speaks integer cents.
