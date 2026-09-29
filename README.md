@@ -243,6 +243,7 @@ Sign-up, sign-out, and password reset are React Server Actions in `src/lib/auth/
 - Every change lands through a pull request with at least one approving review from another team member.
 - Commit small and often; PRs should stay under ~200 changed lines so reviews take 15–20 minutes.
 - Formatting is Prettier (`.prettierrc`): run `npx prettier --write .` before committing. `npm run typecheck`, `npm run lint`, and `npx prettier --check .` must all pass before requesting review.
+- [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs exactly those four checks on every pull request and on pushes to `main`, so a green PR badge is the same signal as passing them locally. It needs no database.
 - Team conventions and the governance rules we agreed on live in [`.specify/memory/constitution.md`](.specify/memory/constitution.md).
 
 ---
