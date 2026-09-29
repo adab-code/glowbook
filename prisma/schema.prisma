@@ -29,8 +29,8 @@ model Account {
   timezone           String   @default("America/Boise") @db.VarChar(64)
   currency           String   @default("USD") @db.VarChar(3)
   onboardingComplete Boolean  @default(false)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  createdAt          DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime @updatedAt @db.Timestamptz(3)
 
   staffUsers   StaffUser[]
   invitations  StaffInvite[]
@@ -52,10 +52,10 @@ model StaffUser {
   lastName        String    @db.VarChar(80)
   phone           String?   @db.VarChar(32)
   isActive        Boolean   @default(true)
-  emailVerifiedAt DateTime?
-  lastLoginAt     DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  emailVerifiedAt DateTime? @db.Timestamptz(3)
+  lastLoginAt     DateTime? @db.Timestamptz(3)
+  createdAt       DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime  @updatedAt @db.Timestamptz(3)
 
   account             Account              @relation(fields: [accountId], references: [id], onDelete: Cascade)
   appointments        Appointment[]
@@ -72,9 +72,9 @@ model StaffInvite {
   email      String    @db.VarChar(255)
   role       StaffRole @default(STAFF)
   token      String    @unique @db.VarChar(255)
-  expiresAt  DateTime
-  acceptedAt DateTime?
-  createdAt  DateTime  @default(now())
+  expiresAt  DateTime  @db.Timestamptz(3)
+  acceptedAt DateTime? @db.Timestamptz(3)
+  createdAt  DateTime  @default(now()) @db.Timestamptz(3)
 
   account      Account    @relation(fields: [accountId], references: [id], onDelete: Cascade)
   acceptedBy   StaffUser? @relation("AcceptedInvite", fields: [acceptedById], references: [id], onDelete: SetNull)
@@ -94,8 +94,8 @@ model Client {
   phone      String?  @db.VarChar(32)
   notes      String?
   isArchived Boolean  @default(false)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @db.Timestamptz(3)
 
   account      Account       @relation(fields: [accountId], references: [id], onDelete: Cascade)
   appointments Appointment[]
@@ -112,8 +112,8 @@ model Service {
   priceCents      Int
   durationMinutes Int
   isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime @updatedAt @db.Timestamptz(3)
 
   account      Account              @relation(fields: [accountId], references: [id], onDelete: Cascade)
   appointments AppointmentService[]
@@ -128,13 +128,13 @@ model Appointment {
   accountId          String            @db.Uuid
   clientId           String            @db.Uuid
   staffUserId        String?           @db.Uuid
-  startsAt           DateTime
-  endsAt             DateTime
+  startsAt           DateTime          @db.Timestamptz(3)
+  endsAt             DateTime          @db.Timestamptz(3)
   status             AppointmentStatus @default(SCHEDULED)
   cancellationReason String?
   priceCentsTotal    Int
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
+  createdAt          DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime          @updatedAt @db.Timestamptz(3)
 
   account   Account              @relation(fields: [accountId], references: [id], onDelete: Cascade)
   client    Client               @relation(fields: [clientId], references: [id], onDelete: Restrict)
@@ -163,9 +163,9 @@ model PasswordResetToken {
   id          String    @id @default(uuid()) @db.Uuid
   staffUserId String    @db.Uuid
   tokenHash   String    @unique @db.VarChar(255)
-  expiresAt   DateTime
-  usedAt      DateTime?
-  createdAt   DateTime  @default(now())
+  expiresAt   DateTime  @db.Timestamptz(3)
+  usedAt      DateTime? @db.Timestamptz(3)
+  createdAt   DateTime  @default(now()) @db.Timestamptz(3)
 
   staffUser StaffUser @relation(fields: [staffUserId], references: [id], onDelete: Cascade)
 
