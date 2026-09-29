@@ -164,12 +164,12 @@ Dark mode is class-based (`<html class="dark">`); the dark set is `neutral-950` 
 // src/app/layout.tsx
 import { Geist, Geist_Mono, Fraunces } from "next/font/google";
 
-export const fonts = {
-  geistSans: Geist({ variable: "--font-geist-sans", subsets: ["latin"] }),
-  geistMono: Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] }),
-  fraunces: Fraunces({ variable: "--font-fraunces", subsets: ["latin"] }),
-};
+const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
+const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+const fraunces = Fraunces({ variable: "--font-fraunces", subsets: ["latin"], display: "swap" });
 ```
+
+They are module-level `const`s, not an exported `fonts` object — nothing outside the root layout needs them. `globals.css` reaches them through `--font-sans` and `--font-display`. `Geist_Mono` is loaded but no rule currently uses `--font-geist-mono`.
 
 ---
 
@@ -181,15 +181,15 @@ export const fonts = {
 
 | Context | Utility | Value |
 |---|---|---|
-| Page gutter | `px-4 sm:px-6` | 16 / 24px — the built layout stops at `sm`; the `lg:px-8` step in the table below is not applied |
-| Between form fields | `space-y-4` | 16px |
+| Page gutter | `px-4 sm:px-6` | 16 / 24px — the built layout stops at `sm`; the `lg:px-8` step is not applied |
+| Between form fields | `space-y-4` | 16px — the value actually used in all 7 forms |
 | Between cards in a grid | `gap-6` | 24px |
-| Between page sections | `space-y-8` | 32px |
+| Between page sections | `space-y-6` | 24px — `space-y-8` is not used anywhere in `src/` |
 | Page title → content | `mb-6` | 24px |
 | Card internal padding | `p-4 sm:p-6` | 16 / 24px |
 | Inline icon ↔ label | `gap-2` | 8px |
-| Dense calendar blocks | `gap-1 p-2` | 4 / 8px |
-| Minimum touch target | `min-h-11 min-w-11` | 44px — non-negotiable on mobile |
+| Dense calendar blocks | `gap-1 p-2` | 4 / 8px — *Planned*; the calendar is not built |
+| Touch target height | `h-11` on buttons and inputs | 44px, but achieved per component rather than by a `min-h-11` utility, so nothing enforces it globally |
 
 ### 4.2 Layout
 
@@ -199,13 +199,13 @@ export const fonts = {
 | App shell | Flex row: sidebar `w-60` fixed ≥`md`, header above the content, page scrolls as a whole. There is no independent content scroller, and no `AppShell` component — the shell is inline in `src/app/(app)/layout.tsx` |
 | Mobile navigation | **Not built, and the current fallback breaks a MUST.** The plan was a shadcn `Sheet` behind a hamburger below `lg`. What exists instead is a horizontal nav strip with `overflow-x-auto` in the header (`app-header.tsx:54`). Constitution §IV requires every view to work without horizontal scrolling, so this is an open accessibility bug, not a styling preference |
 | Forms | One column, but **no `max-w-lg`** — the built forms use `space-y-4` with no width cap; label above input, error below in `text-sm text-danger` |
-| Lists vs tables | `DataTable` on ≥`md`; on mobile it renders stacked `Card`s with label/value rows — never a horizontally scrolling table |
+| Lists vs tables | Hand-rendered `<table>` inside each `*Manager` component. There is no shared `DataTable`, and the planned mobile stacked-card fallback does not exist — the two lists scroll horizontally on narrow screens |
 | Page structure | `PageHeader` (title + description + primary action) → optional toolbar/filters → content → pagination |
 | Density | Comfortable by default; the calendar is the only dense surface |
 
 ### 4.3 Breakpoints
 
-Mobile-first. `sm 640` · `md 768` · `lg 1024` (sidebar appears, 2-column grids) · `xl 1280` (3-column grids, calendar week view). **375px is the primary design target**; nothing may require horizontal scrolling at 320px.
+Mobile-first. `sm 640` · `md 768` (the sidebar appears here, not at `lg`, and 2-column grids) · `lg 1024` · `xl 1280`. **375px is the primary design target.** The intent is that nothing requires horizontal scrolling at 320px; the mobile nav strip and the two manager tables are the places that currently do — see §4.2.
 
 ### 4.4 Radii, borders, elevation
 
@@ -219,7 +219,7 @@ Mobile-first. `sm 640` · `md 768` · `lg 1024` (sidebar appears, 2-column grids
 
 ### 4.5 Motion
 
-`150ms` for hover/colour, `200ms` for panel and sheet transitions, `300ms` for page-level fades — all `ease-out`. Every animation is wrapped in `motion-reduce:transition-none`. No parallax, no autoplay, no looping motion.
+`150ms` for hover/colour, `200ms` for panel transitions, `300ms` for page-level fades — all `ease-out`. There is no sheet transition, because no sheet is built. Reduced motion is handled by one global `@media (prefers-reduced-motion: reduce)` block in `globals.css` (`globals.css:102`) that clamps `animation-duration` and `transition-duration` to `0.01ms` across `*`, rather than by per-component `motion-reduce:` utilities. That satisfies the same requirement with one rule instead of one per class. No parallax, no autoplay, no looping motion.
 
 ---
 
@@ -239,9 +239,9 @@ const buttonVariants = cva(base, {
       danger: "bg-danger text-white hover:bg-danger/90",
     },
     size: {
-      sm: "h-9 px-3 text-body-sm",
-      md: "h-11 px-4 text-body",
-      lg: "h-12 px-6 text-body",
+      sm: "h-9 px-3 text-sm",
+      md: "h-11 px-4 text-sm",
+      lg: "h-12 px-6 text-base",
       icon: "h-11 w-11",
     },
   },
@@ -252,12 +252,12 @@ const buttonVariants = cva(base, {
 | Component | Convention |
 |---|---|
 | `FormField` | `Label` (label token) → control → `FormMessage` (`text-danger`, `role="alert"`) → optional `FormDescription`. The control's `id` is wired to the label via `htmlFor`/`id` |
-| `StatusBadge` | `rounded-full px-2 py-0.5 text-caption` + coloured dot, **sentence case rather than uppercase**. Scheduled `info`, Completed `success`, Cancelled `danger`, No-show `warning` |
-| `EmptyState` | Centred `max-w-sm`, `text-brand-500` icon in a `brand-50` circle, one-sentence message, primary CTA, `py-16`. The icon also uses decorative glyphs (`✦ ▤ ◍ ◉ ⚙`) in place of an icon set, since no icon library is installed |
-| `ConfirmDialog` | shadcn `AlertDialog`. Destructive confirm button is `variant="danger"` and the copy names the record and the consequence |
-| `DataTable` | `min-w-0` columns, `text-body-sm`, row hover `bg-neutral-50`, sticky `Topbar`-level header, mobile fallback to `Card` list |
-| `PageSkeleton` | `animate-pulse` blocks matching the final layout's box sizes so nothing shifts on load |
-| Focus ring | `focus-visible:ring-2 focus-visible:ring-brand-500` on every interactive element — **`ring-offset-2` is not applied** anywhere, and `globals.css` also sets a global `outline: 2px solid` that competes with it |
+| `StatusBadge` | `rounded-full px-2 py-0.5 text-xs font-medium` + a `size-1.5` dot in `bg-current`, **sentence case rather than uppercase**. Scheduled `info`, Completed `success`, Cancelled `danger`, No-show `warning`. The dot is `aria-hidden` and the text label always renders, so status is never colour-only |
+| `EmptyState` | Centred `max-w-sm`, `size-12` circle in `bg-brand-50` with a `text-brand-500` glyph, one-sentence message, primary CTA, `py-16`. The glyph defaults to `✦` and can be overridden; since no icon library is installed, decorative glyphs (`✦ ▤ ◍ ◉ ⚙`) stand in for an icon set |
+| `ConfirmDialog` | Radix `AlertDialog` used directly (`@radix-ui/react-alert-dialog`), not a shadcn wrapper. The destructive confirm button is `variant="danger"` and the copy names the record and the consequence |
+| Focus ring | `focus-visible:ring-2 focus-visible:ring-brand-500/30` plus `focus-visible:border-brand-500` on `Input`, with `focus-visible:outline-none` so the ring is the only indicator. **No `ring-offset-2`** is applied anywhere; instead `globals.css:90` sets a global `:focus-visible { outline: 2px solid var(--color-brand-500); outline-offset: 2px }`, which gives every other focusable element its own 2px ring with a 2px offset |
+
+There is no `DataTable` and no `PageSkeleton`. The two manager lists are hand-rendered tables, and there are no `loading.tsx` / `error.tsx` route boundaries.
 
 ---
 
@@ -269,8 +269,8 @@ const buttonVariants = cva(base, {
 4. Errors are announced (`role="alert"`) and described through `aria-describedby`.
 5. Keyboard: modals trap focus and close on `Escape`; the calendar grid is arrow-key navigable.
 6. Semantic landmarks (`header`, `nav`, `main`, `footer`) and one `h1` per page.
-7. Touch targets ≥ 44px; the primary booking action sits in the bottom third of the mobile viewport.
-8. `prefers-reduced-motion` is respected globally.
+7. Touch targets ≥ 44px; the primary booking action sits in the bottom third of the mobile viewport. Buttons and inputs are `h-11` (44px) and icon buttons are `h-11 w-11`, but this is per component rather than enforced by a utility. The mobile booking action does not exist yet — there is no public booking flow.
+8. `prefers-reduced-motion` is respected globally, by the single `@media` block at `globals.css:102`.
 
 ---
 
