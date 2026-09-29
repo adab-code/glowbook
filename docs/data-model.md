@@ -9,14 +9,16 @@
 
 | Decision | Choice | Rationale |
 |---|---|---|
-| Database | **PostgreSQL on Supabase** (managed, free tier) | Explicitly approved by the course. Relational integrity matters here: an appointment must always point at a real client, a real service, and a real studio. Supabase gives us a hosted Postgres, a connection pooler that survives Vercel's serverless model, and a GUI for inspecting data |
+| Database | **PostgreSQL on Render** (free tier instance) | The course allows any managed platform the team chooses. Relational integrity matters here: an appointment must always point at a real client, a real service, and a real studio. Render hosts both the database and the web service, which keeps the connection string and the network path in one place |
 | ORM | **Prisma 7.10** | Typed client generated from one schema file, migrations checked into the repo, and `prisma studio` for verifying seed data. Keeps every query type-checked under `strict` TypeScript. On v7 the datasource block carries no `url` and the connection string, migrations path, and seed command live in `prisma7.config.ts` |
 | Auth | **Auth.js v5, Credentials provider** | Course default. Identity lives in our own tables so the studio tenancy rules (FR-006/FR-007) are enforced in our code, not delegated to a vendor |
 | IDs | **UUIDv7 via Prisma `@default(uuid())`** | Client-generatable and index-friendly; avoids sequential-ID enumeration on public endpoints |
 | Money | **Integer cents (`Int`), never floats** | `priceCents` avoids the rounding errors that `Decimal`/float pricing introduces in totals |
 | Time | **`DateTime`, currently `timestamp(3)` without a time zone** | Every `Account` stores its own IANA `timezone` and all appointment times are rendered through it, but the stored values are naive. The calendar filters and overlap queries need timezone-aware comparisons, so the day boundary must be computed in the studio's zone before querying — tracked as the first follow-up to Week 04, before the appointment calendar is built |
 
-**Deployment note:** at runtime the app uses the pooled `DATABASE_URL` (Supabase pooler, port 6543, `pgbouncer=true`); `prisma migrate` uses the direct `DIRECT_URL`. Migrations are never run on Vercel at build time.
+**Deployment note:** at runtime the app uses `DATABASE_URL`, the Render Postgres instance's **Internal Database URL**. Render exposes no connection pooler on the free tier, so `DIRECT_URL` is the same string and exists only to keep the Prisma convention of separating migration traffic from application traffic. Neither URL is used at build time.
+
+Migrations are a **manual step** on Render's free tier: `npx prisma migrate deploy`, run from a local machine against the production database. Render only offers an automatic pre-deploy hook on paid web services, so there is no build-time migration on any plan we are on. If the free database instance expires and is recreated, the schema is rebuilt by re-running the checked-in migrations in `prisma/migrations/`.
 
 ---
 

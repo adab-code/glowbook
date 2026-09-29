@@ -156,10 +156,10 @@ A signed-in user opens the dashboard, so that they can see, at a glance, today's
 - **Framework:** Next.js 16 using the App Router, with React Server Components by default and client components only where interactivity is required
 - **Language:** TypeScript 5 in `strict` mode; no `any` in application code
 - **Styling:** Tailwind CSS v4 with design tokens defined in `@theme`, plus shadcn/ui primitives
-- **Data:** PostgreSQL (Supabase) accessed through Prisma ORM; schema and relationships in [`data-model.md`](./data-model.md)
+- **Data:** PostgreSQL (Render) accessed through Prisma ORM; schema and relationships in [`data-model.md`](./data-model.md)
 - **Auth:** Auth.js v5 with the Credentials provider; identity stored in our own `Account` / `StaffUser` tables
 - **API:** Route handlers under `src/app/api/**`; a client → server → database round trip is required (course requirement)
-- **Hosting:** Vercel, with database credentials and auth secrets in environment variables
+- **Hosting:** Render, with database credentials and auth secrets in environment variables. The course allows "Vercel or similar"; see the free tier limits documented in `README.md`
 - **Version control:** GitHub with a protected `main` branch, feature branches, and pull-request review before merge
 - **Validation:** Zod schemas shared between client forms and route handlers
 - **Component structure:** route groups `/(auth)` and `/(app)`; feature-scoped components under `src/components/features/`; shared components under `src/components/shared/` and `src/components/ui/` (see [`architecture.md`](./architecture.md))
