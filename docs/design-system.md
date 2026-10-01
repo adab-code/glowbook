@@ -74,7 +74,9 @@ Appointment status is **never communicated by colour alone** — `StatusBadge` a
 
 ### 2.5 Tailwind v4 token block
 
-Paste into `src/app/globals.css`. shadcn/ui is configured with `cssVariables: true`, so its `--background` / `--primary` / `--border` variables map onto these scales.
+Paste into `src/app/globals.css`. These are the real values in the file today, and the components consume them directly as `brand-*`, `accent-*` and `neutral-*` Tailwind utilities.
+
+**One caveat.** `globals.css` also declares a shadcn-style block of semantic variables — `--background`, `--foreground`, `--card`, `--border`, `--input`, `--ring`, `--muted`, `--muted-foreground` — with a comment saying shadcn components read them. They do not: no component references a single one, and there is no `--primary`, which the shadcn schema expects. They exist so a future `shadcn add` has somewhere to land. Either wire them up or delete them, but do not describe them as in use.
 
 ```css
 @import "tailwindcss";
@@ -140,8 +142,8 @@ Dark mode is class-based (`<html class="dark">`); the dark set is `neutral-950` 
 | Role | Family | Source | Why |
 |---|---|---|---|
 | Body / UI | **Geist Sans** | `next/font/google` (already installed) | Excellent legibility at 14–16px, variable weight, neutral so it never competes with the brand |
-| Display / page titles | **Fraunces** | `next/font/google`, variable, `opsz` axis | A soft, warm serif that signals "boutique studio" instead of "enterprise dashboard"; used only above 24px |
-| Times / numbers | Geist with `tabular-nums` | utility class | Calendar times and prices must not shift width as digits change |
+| Display / page titles | **Fraunces** | `next/font/google`, variable, `opsz` axis | A soft, warm serif that signals "boutique studio" instead of "enterprise dashboard". `globals.css` applies `font-display` to every `h1` and `h2` regardless of size, so the "only above 24px" intent below is not enforced — `CardTitle` renders an `h2` at `text-lg` (18px) |
+| Times / numbers | Geist with `tabular-nums` | utility class | Calendar times and prices must not shift width as digits change. **Not yet applied** — `tabular-nums` appears nowhere in `src/`, so the rule is stated but not implemented |
 
 ### Type scale (mobile → desktop, `clamp()` where marked)
 
@@ -162,12 +164,12 @@ Dark mode is class-based (`<html class="dark">`); the dark set is `neutral-950` 
 // src/app/layout.tsx
 import { Geist, Geist_Mono, Fraunces } from "next/font/google";
 
-export const fonts = {
-  geistSans: Geist({ variable: "--font-geist-sans", subsets: ["latin"] }),
-  geistMono: Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] }),
-  fraunces: Fraunces({ variable: "--font-fraunces", subsets: ["latin"] }),
-};
+const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
+const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+const fraunces = Fraunces({ variable: "--font-fraunces", subsets: ["latin"], display: "swap" });
 ```
+
+They are module-level `const`s, not an exported `fonts` object — nothing outside the root layout needs them. `globals.css` reaches them through `--font-sans` and `--font-display`. `Geist_Mono` is loaded but no rule currently uses `--font-geist-mono`.
 
 ---
 
@@ -179,31 +181,31 @@ export const fonts = {
 
 | Context | Utility | Value |
 |---|---|---|
-| Page gutter | `px-4 sm:px-6 lg:px-8` | 16 / 24 / 32px |
-| Between form fields | `space-y-4` | 16px |
+| Page gutter | `px-4 sm:px-6` | 16 / 24px — the built layout stops at `sm`; the `lg:px-8` step is not applied |
+| Between form fields | `space-y-4` | 16px — the value actually used in all 7 forms |
 | Between cards in a grid | `gap-6` | 24px |
-| Between page sections | `space-y-8` | 32px |
+| Between page sections | `space-y-6` | 24px — `space-y-8` is not used anywhere in `src/` |
 | Page title → content | `mb-6` | 24px |
 | Card internal padding | `p-4 sm:p-6` | 16 / 24px |
 | Inline icon ↔ label | `gap-2` | 8px |
-| Dense calendar blocks | `gap-1 p-2` | 4 / 8px |
-| Minimum touch target | `min-h-11 min-w-11` | 44px — non-negotiable on mobile |
+| Dense calendar blocks | `gap-1 p-2` | 4 / 8px — *Planned*; the calendar is not built |
+| Touch target height | `h-11` on buttons and inputs | 44px, but achieved per component rather than by a `min-h-11` utility, so nothing enforces it globally |
 
 ### 4.2 Layout
 
 | Pattern | Rule |
 |---|---|
-| Content width | `mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8` |
-| App shell | CSS grid: sidebar `w-64` fixed ≥`lg`, `Topbar` sticky `h-16`, content scrolls independently |
-| Mobile navigation | Below `lg` the sidebar becomes a shadcn `Sheet` opened from a hamburger in the `Topbar` |
-| Forms | One column, `max-w-lg`; field label above input, error below in `text-sm text-danger` |
-| Lists vs tables | `DataTable` on ≥`md`; on mobile it renders stacked `Card`s with label/value rows — never a horizontally scrolling table |
+| Content width | `px-4 sm:px-6` — the planned `max-w-7xl` cap is **not applied**, so long-form pages run the full width of the content column |
+| App shell | Flex row: sidebar `w-60` fixed ≥`md`, header above the content, page scrolls as a whole. There is no independent content scroller, and no `AppShell` component — the shell is inline in `src/app/(app)/layout.tsx` |
+| Mobile navigation | **Not built, and the current fallback breaks a MUST.** The plan was a shadcn `Sheet` behind a hamburger below `lg`. What exists instead is a horizontal nav strip with `overflow-x-auto` in the header (`app-header.tsx:54`). Constitution §IV requires every view to work without horizontal scrolling, so this is an open accessibility bug, not a styling preference |
+| Forms | One column, but **no `max-w-lg`** — the built forms use `space-y-4` with no width cap; label above input, error below in `text-sm text-danger` |
+| Lists vs tables | Hand-rendered `<table>` inside each `*Manager` component. There is no shared `DataTable`, and the planned mobile stacked-card fallback does not exist — the two lists scroll horizontally on narrow screens |
 | Page structure | `PageHeader` (title + description + primary action) → optional toolbar/filters → content → pagination |
 | Density | Comfortable by default; the calendar is the only dense surface |
 
 ### 4.3 Breakpoints
 
-Mobile-first. `sm 640` · `md 768` · `lg 1024` (sidebar appears, 2-column grids) · `xl 1280` (3-column grids, calendar week view). **375px is the primary design target**; nothing may require horizontal scrolling at 320px.
+Mobile-first. `sm 640` · `md 768` (the sidebar appears here, not at `lg`, and 2-column grids) · `lg 1024` · `xl 1280`. **375px is the primary design target.** The intent is that nothing requires horizontal scrolling at 320px; the mobile nav strip and the two manager tables are the places that currently do — see §4.2.
 
 ### 4.4 Radii, borders, elevation
 
@@ -217,13 +219,13 @@ Mobile-first. `sm 640` · `md 768` · `lg 1024` (sidebar appears, 2-column grids
 
 ### 4.5 Motion
 
-`150ms` for hover/colour, `200ms` for panel and sheet transitions, `300ms` for page-level fades — all `ease-out`. Every animation is wrapped in `motion-reduce:transition-none`. No parallax, no autoplay, no looping motion.
+`150ms` for hover/colour, `200ms` for panel transitions, `300ms` for page-level fades — all `ease-out`. There is no sheet transition, because no sheet is built. Reduced motion is handled by one global `@media (prefers-reduced-motion: reduce)` block in `globals.css` (`globals.css:102`) that clamps `animation-duration` and `transition-duration` to `0.01ms` across `*`, rather than by per-component `motion-reduce:` utilities. That satisfies the same requirement with one rule instead of one per class. No parallax, no autoplay, no looping motion.
 
 ---
 
 ## 5. Component recipes
 
-shadcn/ui primitives (in `src/components/ui/`) are used unmodified wherever possible; these are the only GlowBook-specific variants layered on top.
+The four primitives in `src/components/ui/` follow shadcn's *conventions* — `cn()`, `cva` variants, `data-slot` attributes, the same Radix primitives — but they are hand-built and deliberately diverge: `button` uses `primary`/`danger` variants where shadcn uses `default`/`destructive`, and the colours come from this project's warm scale rather than a shadcn base colour. The variants below are GlowBook-specific on purpose, not "layered on" an unmodified shadcn base.
 
 ```ts
 // button.tsx variants — cva
@@ -237,9 +239,9 @@ const buttonVariants = cva(base, {
       danger: "bg-danger text-white hover:bg-danger/90",
     },
     size: {
-      sm: "h-9 px-3 text-body-sm",
-      md: "h-11 px-4 text-body",
-      lg: "h-12 px-6 text-body",
+      sm: "h-9 px-3 text-sm",
+      md: "h-11 px-4 text-sm",
+      lg: "h-12 px-6 text-base",
       icon: "h-11 w-11",
     },
   },
@@ -250,12 +252,12 @@ const buttonVariants = cva(base, {
 | Component | Convention |
 |---|---|
 | `FormField` | `Label` (label token) → control → `FormMessage` (`text-danger`, `role="alert"`) → optional `FormDescription`. The control's `id` is wired to the label via `htmlFor`/`id` |
-| `StatusBadge` | `rounded-full px-2 py-0.5 text-caption` + coloured dot + uppercase label. Scheduled `info`, Completed `success`, Cancelled `danger`, No-show `warning` |
-| `EmptyState` | Centred `max-w-sm`, `neutral-400` icon in a `brand-50` circle, one-sentence message, primary CTA, `py-16` |
-| `ConfirmDialog` | shadcn `AlertDialog`. Destructive confirm button is `variant="danger"` and the copy names the record and the consequence |
-| `DataTable` | `min-w-0` columns, `text-body-sm`, row hover `bg-neutral-50`, sticky `Topbar`-level header, mobile fallback to `Card` list |
-| `PageSkeleton` | `animate-pulse` blocks matching the final layout's box sizes so nothing shifts on load |
-| Focus ring | `focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2` on every interactive element |
+| `StatusBadge` | `rounded-full px-2 py-0.5 text-xs font-medium` + a `size-1.5` dot in `bg-current`, **sentence case rather than uppercase**. Scheduled `info`, Completed `success`, Cancelled `danger`, No-show `warning`. The dot is `aria-hidden` and the text label always renders, so status is never colour-only |
+| `EmptyState` | Centred `max-w-sm`, `size-12` circle in `bg-brand-50` with a `text-brand-500` glyph, one-sentence message, primary CTA, `py-16`. The glyph defaults to `✦` and can be overridden; since no icon library is installed, decorative glyphs (`✦ ▤ ◍ ◉ ⚙`) stand in for an icon set |
+| `ConfirmDialog` | Radix `AlertDialog` used directly (`@radix-ui/react-alert-dialog`), not a shadcn wrapper. The destructive confirm button is `variant="danger"` and the copy names the record and the consequence |
+| Focus ring | `focus-visible:ring-2 focus-visible:ring-brand-500/30` plus `focus-visible:border-brand-500` on `Input`, with `focus-visible:outline-none` so the ring is the only indicator. **No `ring-offset-2`** is applied anywhere; instead `globals.css:90` sets a global `:focus-visible { outline: 2px solid var(--color-brand-500); outline-offset: 2px }`, which gives every other focusable element its own 2px ring with a 2px offset |
+
+There is no `DataTable` and no `PageSkeleton`. The two manager lists are hand-rendered tables, and there are no `loading.tsx` / `error.tsx` route boundaries.
 
 ---
 
@@ -267,8 +269,8 @@ const buttonVariants = cva(base, {
 4. Errors are announced (`role="alert"`) and described through `aria-describedby`.
 5. Keyboard: modals trap focus and close on `Escape`; the calendar grid is arrow-key navigable.
 6. Semantic landmarks (`header`, `nav`, `main`, `footer`) and one `h1` per page.
-7. Touch targets ≥ 44px; the primary booking action sits in the bottom third of the mobile viewport.
-8. `prefers-reduced-motion` is respected globally.
+7. Touch targets ≥ 44px; the primary booking action sits in the bottom third of the mobile viewport. Buttons and inputs are `h-11` (44px) and icon buttons are `h-11 w-11`, but this is per component rather than enforced by a utility. The mobile booking action does not exist yet — there is no public booking flow.
+8. `prefers-reduced-motion` is respected globally, by the single `@media` block at `globals.css:102`.
 
 ---
 

@@ -12,11 +12,11 @@
 | Database | **PostgreSQL on Render** (free tier instance) | The course allows any managed platform the team chooses. Relational integrity matters here: an appointment must always point at a real client, a real service, and a real studio. Render hosts both the database and the web service, which keeps the connection string and the network path in one place |
 | ORM | **Prisma 7.10** | Typed client generated from one schema file, migrations checked into the repo, and `prisma studio` for verifying seed data. Keeps every query type-checked under `strict` TypeScript. On v7 the datasource block carries no `url` and the connection string, migrations path, and seed command live in `prisma7.config.ts` |
 | Auth | **Auth.js v5, Credentials provider** | Course default. Identity lives in our own tables so the studio tenancy rules (FR-006/FR-007) are enforced in our code, not delegated to a vendor |
-| IDs | **UUIDv7 via Prisma `@default(uuid())`** | Client-generatable and index-friendly; avoids sequential-ID enumeration on public endpoints |
+| IDs | **UUIDv4 via Prisma `@default(uuid())`** | Random rather than sequential, so IDs cannot be enumerated on public endpoints. Generated **server-side by the database**, not by the client — the original plan called these UUIDv7, which `uuid()` does not produce; swapping to `@default(uuidv7())` is available if the index locality becomes worth it |
 | Money | **Integer cents (`Int`), never floats** | `priceCents` avoids the rounding errors that `Decimal`/float pricing introduces in totals |
-| Time | **`DateTime` mapped to `timestamptz(3)`** | Every `Account` stores its own IANA `timezone` and all appointment times are rendered through it. The columns store absolute instants rather than wall-clock time, so a booking made on either side of a daylight-saving change stays on the correct UTC offset. What is *not* done yet is presentation: the appointment calendar has to turn the studio's day boundary into that zone before it can range-filter a day, which is the first follow-up to Week 04 |
+| Time | **`DateTime`, currently `timestamp(3)` without a time zone** | Every `Account` stores its own IANA `timezone` and all appointment times are rendered through it, but the stored values are naive. The calendar filters and overlap queries need timezone-aware comparisons, so the day boundary must be computed in the studio's zone before querying — tracked as the first follow-up to Week 04, before the appointment calendar is built |
 
-**Deployment note:** at runtime the app uses `DATABASE_URL`, the Render Postgres instance's **Internal Database URL**. Render exposes no connection pooler on the free tier, so `DIRECT_URL` is the same string and exists only to keep the Prisma convention of separating migration traffic from application traffic. Neither URL is used at build time.
+**Deployment note:** at runtime the app uses a single variable, `DATABASE_URL`, set to the Render Postgres instance's **Internal Database URL**. An earlier draft of this document also described `DIRECT_URL`, kept for the usual Prisma convention of separating migration traffic from application traffic. Nothing reads it — not `prisma7.config.ts`, not the schema, not any source file — so it is documented here as a leftover rather than a requirement, and Render exposes no pooler on the free tier that would justify adding one. `DATABASE_URL` is not used at build time, though the build does need the variable to *exist*: `src/lib/db.ts` throws at import time when it is missing, and Next evaluates route modules while collecting page data.
 
 Migrations are a **manual step** on Render's free tier: `npx prisma migrate deploy`, run from a local machine against the production database. Render only offers an automatic pre-deploy hook on paid web services, so there is no build-time migration on any plan we are on. If the free database instance expires and is recreated, the schema is rebuilt by re-running the checked-in migrations in `prisma/migrations/`.
 
@@ -142,12 +142,12 @@ Every table carries `createdAt` / `updatedAt` (`@updatedAt` handled by Prisma) a
 | `id` | `uuid` | PK, `uuid()` |
 | `studioName` | `string(120)` | Required; set at sign-up (FR-001) |
 | `slug` | `string(140)` | Required, **unique** — future public booking URL |
-| `timezone` | `string(64)` | IANA name; defaults from the browser at sign-up, drives calendar rendering |
+| `timezone` | `string(64)` | IANA name; drives calendar rendering. Sign-up currently hardcodes `America/Boise` — reading the browser's zone is planned, not done |
 | `currency` | `string(3)` | ISO 4217, default `USD` |
-| `onboardingComplete` | `boolean` | Default `false`; `true` after the first service is created |
+| `onboardingComplete` | `boolean` | Default `false`. Nothing in `src/` reads or writes it yet — the first-service hook that was meant to set it is not built |
 | `createdAt` / `updatedAt` | `DateTime` | — |
 
-**This is the isolation boundary.** Every query in `lib/queries/` filters by `accountId` taken from the session — never from user input.
+**This is the isolation boundary.** Every query filters by `accountId` taken from the session — never from user input. There is no `lib/queries/` layer: server components call Prisma inline, and route handlers use the `findOwned*` helpers in each route module.
 
 ### 3.2 `StaffUser`
 
@@ -192,7 +192,7 @@ Backs FR-007. Accepted invites create the `StaffUser` row and set `acceptedAt` i
 | `isArchived` | `boolean` | Default `false` — soft delete so appointment history stays intact |
 | `createdAt` / `updatedAt` | `DateTime` | — |
 
-**Delete rule (FR-015):** the UI warns first. If the client has appointments, the route handler returns `409` unless `?strategy=archive` is passed, which sets `isArchived = true` instead of deleting the row.
+**Delete rule (FR-015):** `DELETE /api/clients/[id]` never hard-deletes. It counts the client's **upcoming `SCHEDULED`** appointments (`startsAt >= now`). If any exist it returns **`400`** naming how many, and tells the user to cancel them first. Otherwise it sets `isArchived = true` and returns `200` with `meta.archived`. An earlier draft of this document said `409` plus a `?strategy=archive` parameter; neither is true — no such query parameter is read.
 
 ### 3.5 `Service`
 
@@ -207,7 +207,7 @@ Backs FR-007. Accepted invites create the `StaffUser` row and set `acceptedAt` i
 | `isActive` | `boolean` | Default `true`; inactive services stay visible on past appointments |
 | `createdAt` / `updatedAt` | `DateTime` | — |
 
-**Delete rule (FR-009):** deleting a service referenced by any non-cancelled appointment returns `409` and lists the blocking appointments.
+**Delete rule (FR-009):** `DELETE /api/services/[id]` counts **all** `AppointmentService` rows for the service — no status or date filter. If the count is above zero it archives instead: `isActive = false`, returned as **`200`** with `meta.archived` and the count in the message. Only an unreferenced service is hard-deleted, also as `200`. An earlier draft said `409` with a list of blocking appointments; the real behaviour is a silent archive that succeeds.
 
 ### 3.6 `Appointment`
 
@@ -218,13 +218,13 @@ Backs FR-007. Accepted invites create the `StaffUser` row and set `acceptedAt` i
 | `clientId` | `uuid` | FK → `Client.id`, `onDelete: Restrict` |
 | `staffUserId` | `uuid?` | FK → `StaffUser.id`, `onDelete: SetNull` — null means "unassigned" |
 | `startsAt` | `DateTime` | **Required** (FR-022) |
-| `endsAt` | `DateTime` | **Required**; computed as `max(service durations)` from the selected services |
+| `endsAt` | `DateTime` | **Required**; computed as the **sum** of the selected services' durations, so three 30-minute services book 90 minutes |
 | `status` | `enum` | `SCHEDULED` (default, FR-024) \| `COMPLETED` \| `CANCELLED` \| `NO_SHOW` |
 | `cancellationReason` | `text?` | Set when status becomes `CANCELLED` |
 | `priceCentsTotal` | `int` | Snapshot of the summed service prices **at booking time**, so later price edits do not rewrite history |
 | `createdAt` / `updatedAt` | `DateTime` | — |
 
-**Overlap rule (FR-021):** on create/update, the handler loads the staff member's non-cancelled appointments for that day and returns `409` with the conflicting slot if `startsAt < other.endsAt && endsAt > other.startsAt`. A Postgres `EXCLUDE USING gist` constraint on `tstzrange(startsAt, endsAt)` is the Phase 2 hardening.
+**Overlap rule (FR-021) — planned, not built.** There is no `/api/appointments` route yet, so nothing enforces this. The agreed design: on create/update, load the staff member's non-cancelled appointments for that day and reject with `409` when `startsAt < other.endsAt && endsAt > other.startsAt`. A read-then-write check like that is not race-proof — two requests submitted at the same instant can both pass it — so a Postgres `EXCLUDE USING gist` constraint on `tstzrange(startsAt, endsAt)` is the real fix, and should land with the booking handler rather than after it.
 
 ### 3.7 `AppointmentService` (join table)
 
@@ -296,7 +296,7 @@ Backs FR-005 and constitution §III (secure, time-limited links).
 ```bash
 npx prisma migrate dev --name init   # create the schema in the local/dev database
 npx prisma studio                    # browse seeded rows
-npx prisma validate                  # schema sanity check in CI
+npx prisma validate                  # schema sanity check (run locally; CI does not include it)
 ```
 
-Seed data covers one studio with an owner, a second staff member, four services, five clients, and appointments spread across today and the next two weeks (including one cancelled and one no-show) so the dashboard and calendar have something real to render on first run.
+Seed data covers one studio with an owner, a second staff member, **four services, three clients**, and **four appointments** spread across today and the next two weeks — three `SCHEDULED` and one `COMPLETED` — so the dashboard has something real to render on first run. There are no `CANCELLED` or `NO_SHOW` appointments in the seed; an earlier draft of this document claimed there were.
