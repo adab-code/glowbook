@@ -105,7 +105,7 @@ export function ServiceForm({
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-          <FormAlert message={message} />
+          <FormAlert message={message} fields={fields} />
           <FormRow>
             <FormField label="Name" error={fields.name}>
               {({ id, invalid, describedBy }) => (

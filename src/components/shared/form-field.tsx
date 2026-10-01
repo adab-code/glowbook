@@ -64,14 +64,26 @@ export function FormRow({
   return <div className={cn("space-y-4", className)}>{children}</div>;
 }
 
-export function FormAlert({ message }: { message?: string | null }) {
-  if (!message) return null;
+export function FormAlert({
+  message,
+  fields,
+}: {
+  message?: string | null;
+  fields?: Record<string, string>;
+}) {
+  // A Zod issue with no path is filed under `form` by `fieldErrors()`. Rendering it
+  // here means an error that belongs to no single input is still shown, instead of
+  // the form claiming "check the highlighted fields" while nothing is highlighted.
+  const formError = fields?.form;
+  if (!message && !formError) return null;
+
   return (
     <div
       role="alert"
       className="rounded-[var(--radius-control)] bg-danger-bg px-3 py-2 text-sm text-danger"
     >
-      {message}
+      {message ? <p>{message}</p> : null}
+      {formError ? <p className="mt-1">{formError}</p> : null}
     </div>
   );
 }

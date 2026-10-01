@@ -20,7 +20,12 @@ export type SessionUser = {
  */
 export async function requireUser(): Promise<SessionUser> {
   const session = await auth();
-  if (!session?.user?.id) throw unauthorized();
+
+  // `accountId` is the tenancy boundary, so it is checked, not assumed. An older
+  // token can decode to a session with an id but no `accountId`; every route then
+  // runs `where: { accountId: undefined }`, which Prisma drops from the query, and
+  // the studio silently sees every other studio's records.
+  if (!session?.user?.id || !session.user.accountId) throw unauthorized();
 
   return {
     id: session.user.id,

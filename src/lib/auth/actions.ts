@@ -34,13 +34,32 @@ function slugify(value: string) {
 }
 
 /**
- * Only ever redirect to a path inside this app. A crafted `from` of
- * `https://evil.com` or `//evil.com` would otherwise turn the login form
- * into an open redirect, so `//` is rejected alongside absolute URLs.
+ * Only ever redirect to a path inside this app.
+ *
+ * Rejecting `//evil.com` and absolute URLs is not enough. Browsers treat a
+ * backslash as a path separator, so `/\evil.com` is normalised to
+ * `https://evil.com` by the URL parser — the previous check let that through and
+ * turned the login form into an open redirect. The remaining check is the
+ * authoritative one: resolve the value against a throwaway base and confirm it
+ * stayed on the base's origin.
  */
 function safeRedirect(raw: FormDataEntryValue | null): string {
   const value = typeof raw === "string" ? raw : "";
-  if (!value.startsWith("/") || value.startsWith("//")) return "/dashboard";
+  const FALLBACK = "/dashboard";
+
+  if (!value.startsWith("/") || value.startsWith("//")) return FALLBACK;
+  // Browsers normalise `\` to `/`, so `/\evil.com` leaves the origin. Control
+  // characters are refused too — they have no business in a redirect target.
+  if (value.includes("\\")) return FALLBACK;
+  if (/[\u0000-\u001f\u007f]/.test(value)) return FALLBACK;
+
+  try {
+    const base = new URL("http://localhost");
+    if (new URL(value, base).origin !== base.origin) return FALLBACK;
+  } catch {
+    return FALLBACK;
+  }
+
   return value;
 }
 
@@ -163,9 +182,14 @@ export async function requestResetAction(
         expiresAt: new Date(Date.now() + PASSWORD_RESET_TTL_MS),
       },
     });
-    console.info(
-      `[dev] password reset link for ${email}: /reset-password?token=${token}`,
-    );
+    // The token is a live credential for the next hour. Render aggregates logs and
+    // keeps them for weeks, so it is never printed outside local development —
+    // anyone able to read the log could take over the account.
+    if (process.env.NODE_ENV !== "production") {
+      console.info(
+        `[dev] password reset link for ${email}: /reset-password?token=${token}`,
+      );
+    }
   }
 
   return { status: "success" };

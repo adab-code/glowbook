@@ -1,23 +1,17 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { EmptyState } from "@/components/shared/empty-state";
+import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/page-header";
-import { StatusBadge } from "@/components/shared/status-badge";
+import { UpcomingAppointments } from "@/components/features/appointments/upcoming-appointments";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth/session";
+import { zonedWeekBounds } from "@/lib/utils/datetime";
+import { appointmentInclude } from "@/lib/appointments/types";
 import {
   formatDateTime,
+  formatDayLabel,
   formatMoney,
-  formatTime,
-  fullName,
 } from "@/lib/utils/format";
 
 export const metadata: Metadata = { title: "Dashboard" };
@@ -25,19 +19,25 @@ export const metadata: Metadata = { title: "Dashboard" };
 export default async function DashboardPage() {
   const user = await requireUser();
   const now = new Date();
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-  const [upcoming, clientCount, serviceCount, weekRevenueCents] =
+  // Every boundary is resolved in the studio's zone. The server runs in UTC, so
+  // `new Date(y, m, d)` here would roll the day over at 17:00 Boise time and credit
+  // tomorrow's completed appointments to today.
+  const weekStart = zonedWeekBounds(now, user.timezone, 1);
+  const weekEnd = zonedWeekBounds(now, user.timezone, 1, true);
+
+  const [upcoming, upcomingCount, clientCount, serviceCount, weekRevenueCents] =
     await Promise.all([
       db.appointment.findMany({
         where: { accountId: user.accountId, startsAt: { gte: now } },
         orderBy: { startsAt: "asc" },
         take: 5,
-        include: {
-          client: true,
-          services: { include: { service: true } },
-          staffUser: true,
-        },
+        include: appointmentInclude,
+      }),
+      // Counted separately: `upcoming.length` was the length of a `take: 5` page, so
+      // the card read "5" for every studio with more than five bookings.
+      db.appointment.count({
+        where: { accountId: user.accountId, startsAt: { gte: now } },
       }),
       db.client.count({
         where: { accountId: user.accountId, isArchived: false },
@@ -50,10 +50,9 @@ export default async function DashboardPage() {
           where: {
             accountId: user.accountId,
             status: "COMPLETED",
-            startsAt: {
-              gte: startOfDay,
-              lt: new Date(startOfDay.getTime() + 7 * 24 * 60 * 60 * 1000),
-            },
+            // The studio's own Monday→Sunday, not "the next 168 hours from now",
+            // which reached into the future and counted unearned money.
+            startsAt: { gte: weekStart, lt: weekEnd },
           },
           select: { priceCentsTotal: true },
         })
@@ -63,12 +62,17 @@ export default async function DashboardPage() {
     ]);
 
   const stats = [
-    { label: "Upcoming appointments", value: String(upcoming.length) },
+    {
+      label: "Upcoming appointments",
+      value: String(upcomingCount),
+      hint: upcomingCount > upcoming.length ? "Next 5 shown below" : undefined,
+    },
     { label: "Active clients", value: String(clientCount) },
     { label: "Bookable services", value: String(serviceCount) },
     {
       label: "Revenue this week",
       value: formatMoney(weekRevenueCents, user.currency),
+      hint: `${formatDayLabel(weekStart, user.timezone)} – ${formatDayLabel(weekEnd, user.timezone)}, completed only`,
     },
   ];
 
@@ -97,61 +101,24 @@ export default async function DashboardPage() {
               <p className="mt-1 text-2xl font-semibold text-neutral-900">
                 {stat.value}
               </p>
+              {stat.hint ? (
+                <p className="mt-1 text-xs text-neutral-500">{stat.hint}</p>
+              ) : null}
             </CardContent>
           </Card>
         ))}
       </div>
 
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle>Next appointments</CardTitle>
-          <CardDescription>Times are shown in {user.timezone}.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {upcoming.length === 0 ? (
-            <EmptyState
-              title="Nothing booked yet"
-              description="Once clients start booking, their appointments will show up here."
-              icon="▤"
-            />
-          ) : (
-            <ul className="divide-y divide-neutral-200">
-              {upcoming.map((appointment) => (
-                <li
-                  key={appointment.id}
-                  className="flex flex-col gap-2 py-4 first:pt-0 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div className="space-y-1">
-                    <p className="font-medium text-neutral-800">
-                      {fullName(appointment.client)}
-                    </p>
-                    <p className="text-sm text-neutral-600">
-                      {appointment.services
-                        .map((entry) => entry.service.name)
-                        .join(", ")}
-                    </p>
-                    <p className="text-xs text-neutral-500">
-                      {appointment.staffUser
-                        ? `with ${fullName(appointment.staffUser)}`
-                        : "No staff assigned"}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <StatusBadge status={appointment.status} />
-                    <p className="text-sm text-neutral-700">
-                      {formatTime(appointment.startsAt, user.timezone)}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+      <UpcomingAppointments
+        initialAppointments={upcoming}
+        timeZone={user.timezone}
+      />
 
       <p className="mt-6 text-xs text-neutral-500">
-        Full schedule view lands in the next milestone — today you can already
-        read the next five bookings for {formatDateTime(now, user.timezone)}.
+        Showing the next {upcoming.length} of {upcomingCount} upcoming
+        appointment
+        {upcomingCount === 1 ? "" : "s"}, as of{" "}
+        {formatDateTime(now, user.timezone)}.
       </p>
     </>
   );

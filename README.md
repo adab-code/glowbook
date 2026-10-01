@@ -68,7 +68,7 @@ cp .env.example .env.local
 | Variable | Purpose |
 |---|---|
 | `DATABASE_URL` | PostgreSQL connection string the app uses at runtime. On Render this is the instance's **Internal Database URL**; locally it points at `localhost:5432` |
-| `DIRECT_URL` | Direct connection string used by Prisma migrations. On Render use the same internal URL, since Render does not expose a separate pooler on the free tier |
+| `DIRECT_URL` | **Not used.** Nothing reads it — not `prisma7.config.ts`, not the schema, not any source file. It survives in `.env.example` from the usual Prisma convention of separating migration traffic from app traffic. Prisma 7 reads `DATABASE_URL` for both, and Render's free tier exposes no separate pooler that would justify wiring one up |
 | `AUTH_SECRET` | Secret used by Auth.js to sign session cookies (`npx auth secret` to generate) |
 | `AUTH_TRUST_HOST` | Set to `true` on Render so Auth.js trusts the `X-Forwarded-Host` header from Render's proxy |
 
@@ -123,7 +123,7 @@ The course constitution allows "Vercel or similar", so this project is hosted on
    | Node version | from `engines` in `package.json` (24) |
    | Health check path | `/login` |
 
-4. Add the environment variables under **Environment** for the web service: `DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET`, `AUTH_TRUST_HOST=true`.
+4. Add the environment variables under **Environment** for the web service: `DATABASE_URL`, `AUTH_SECRET`, `AUTH_TRUST_HOST=true`. Migrations are run manually from a local machine — see [`docs/data-model.md`](docs/data-model.md) §1.
 5. In the **Postgres** instance settings, open **Access** and add the web service. Without this the service cannot reach the database over Render's internal network.
 6. Run migrations once against the production database — Render will not do it for you:
 
