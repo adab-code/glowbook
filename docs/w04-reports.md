@@ -2,7 +2,7 @@
 
 Week 04 deliverables: team meeting summary, project setup evidence, the bugs found and fixed while building the appointment feature, and the code review status.
 
-**Verification note.** Everything asserted below was checked against the repository or against a real HTTP request with a real signed-in session. Facts that could not be verified from the repo are marked with `«...»` and need a human to fill in before submitting. Test and performance claims are deliberately absent — the assertions described in §2 ran from throwaway scripts outside the repository, which are deleted and untracked, so there is no committed test suite to cite and no honest way to report one.
+**Verification note.** Everything asserted below was checked against the repository, against `git` and the GitHub API, or against a real HTTP request with a real signed-in session. No claim here is taken on trust. Performance and test-coverage claims are deliberately absent: the assertions described in §2 ran from throwaway scripts outside the repository, which are deleted and untracked, so there is no committed test suite to cite and no honest way to report one.
 
 ---
 
@@ -41,7 +41,7 @@ Shared: the booking flow is co-owned — the API, validation, and overlap rule b
 
 ### What this week's pull request contains
 
-Branch `feat/appointments-booking` into `main`, **open and not merged**: «PR URL».
+Branch `feat/appointments-booking` into `main`, **open and not merged**: https://github.com/adab-code/glowbook/pull/28.
 
 - **Three appointment route handlers** — `GET`/`POST /api/appointments`, `GET`/`PATCH`/`DELETE /api/appointments/[id]`, `PATCH /api/appointments/[id]/status` — plus a shared `src/lib/appointments/scheduling.ts` that owns the overlap rule so the create, edit, and reopen paths cannot drift apart.
 - **Four new feature components** — booking form, day view, inline status actions, and the dashboard's upcoming list — plus three route boundaries (`error`, `loading`, `not-found`).
