@@ -10,28 +10,71 @@ if (!connectionString) {
 
 const db = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
 
+const DEMO_SLUG = "aurea-lashes";
 const PASSWORD = process.env.SEED_PASSWORD ?? "GlowBook!2026";
+
+/**
+ * This script creates one demo studio and nothing else. It refuses to run against a
+ * production database unless the operator sets `ALLOW_PRODUCTION_SEED=1` and points
+ * `SEED_ALLOWED_STUDIO` at the one studio they are willing to lose. The previous
+ * version ran eight unscoped `deleteMany()` calls, which meant pointing it at a
+ * shared database erased *every* studio on it.
+ */
+if (
+  process.env.NODE_ENV === "production" &&
+  !process.env.ALLOW_PRODUCTION_SEED
+) {
+  throw new Error(
+    "Refusing to seed with NODE_ENV=production. Set ALLOW_PRODUCTION_SEED=1 and " +
+      "SEED_ALLOWED_STUDIO=<slug> if you really mean to reset a single studio.",
+  );
+}
+
+const targetSlug = process.env.SEED_ALLOWED_STUDIO ?? DEMO_SLUG;
+
+if (
+  process.env.NODE_ENV === "production" &&
+  process.env.SEED_ALLOWED_STUDIO !== DEMO_SLUG
+) {
+  throw new Error(
+    `Refusing to seed production studio "${targetSlug}". Only the demo studio ` +
+      `("${DEMO_SLUG}") can be reset by this script.`,
+  );
+}
 
 async function main() {
   // bcrypt, cost 12 — the same scheme Auth.js compares against in src/auth.ts.
   const passwordHash = await hash(PASSWORD, 12);
 
-  // Idempotent: re-running the seed resets the demo studio instead of duplicating it.
-  await db.$transaction([
-    db.appointmentService.deleteMany(),
-    db.appointment.deleteMany(),
-    db.passwordResetToken.deleteMany(),
-    db.staffInvite.deleteMany(),
-    db.client.deleteMany(),
-    db.service.deleteMany(),
-    db.staffUser.deleteMany(),
-    db.account.deleteMany(),
-  ]);
+  // Idempotent and scoped: re-running the seed resets the demo studio instead of
+  // duplicating it, and leaves every other studio on the database untouched.
+  // Appointments first, then the rows they reference.
+  const existing = await db.account.findUnique({
+    where: { slug: targetSlug },
+    select: { id: true },
+  });
+
+  if (existing) {
+    await db.$transaction([
+      db.appointmentService.deleteMany({
+        where: { appointment: { accountId: existing.id } },
+      }),
+      db.appointment.deleteMany({ where: { accountId: existing.id } }),
+      db.passwordResetToken.deleteMany({
+        where: { staffUser: { accountId: existing.id } },
+      }),
+      db.staffInvite.deleteMany({ where: { accountId: existing.id } }),
+      db.client.deleteMany({ where: { accountId: existing.id } }),
+      db.service.deleteMany({ where: { accountId: existing.id } }),
+      db.staffUser.deleteMany({ where: { accountId: existing.id } }),
+      db.account.deleteMany({ where: { id: existing.id } }),
+    ]);
+  }
 
   const account = await db.account.create({
     data: {
       studioName: "Aurea Lashes",
-      slug: "aurea-lashes",
+      slug: DEMO_SLUG,
       timezone: "America/Boise",
       currency: "USD",
       onboardingComplete: true,
@@ -208,10 +251,16 @@ async function main() {
 
   console.info("Seeded demo studio:");
   console.info(`  account  ${account.studioName} (${account.slug})`);
-  console.info(`  owner    owner@glowbook.dev  /  ${PASSWORD}`);
-  console.info(`  staff    staff@glowbook.dev  /  ${PASSWORD}`);
+  // Emails only. The password comes from SEED_PASSWORD, which the operator set, so
+  // printing it here would write a working credential into every CI log that runs
+  // this script. The documented demo password stays in the README.
+  console.info(`  owner    owner@glowbook.dev  (OWNER)`);
+  console.info(`  staff    staff@glowbook.dev  (STAFF)`);
   console.info(
     `  services ${services.length}, clients ${clients.length}, appointments ${appointments.length}`,
+  );
+  console.info(
+    "  password: the value of SEED_PASSWORD (see README → Demo credentials).",
   );
 }
 

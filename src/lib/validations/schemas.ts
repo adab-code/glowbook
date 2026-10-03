@@ -47,23 +47,45 @@ export const resetPasswordSchema = z
     path: ["confirm"],
   });
 
+/**
+ * `z.coerce.boolean()` is a trap: `Boolean("false")` and `Boolean("0")` are both
+ * `true`, so a PATCH sending `isActive: "false"` over the wire turned a service *on*.
+ * This accepts the shapes a real client actually sends and rejects the rest, instead
+ * of guessing.
+ */
+const booleanish = z
+  .union([
+    z.boolean(),
+    z.literal("true"),
+    z.literal("1"),
+    z.literal("false"),
+    z.literal("0"),
+  ])
+  .transform((value) => value === true || value === "true" || value === "1");
+
+/**
+ * Money is a `z.number`, not `z.coerce.number()`: coercion turns `null` into `0`, so a
+ * missing price would silently create a free service instead of being rejected.
+ */
+const priceCentsSchema = z
+  .number({ error: "Enter a price" })
+  .int("Enter a whole amount")
+  .min(0, "Price cannot be negative")
+  .max(10_000_00, "Price looks too large");
+
 export const serviceSchema = z
   .object({
     name: trimmed
       .min(1, "Enter a service name")
       .max(120, "Service name cannot exceed 120 characters"),
     description: trimmed.max(2000).optional().or(z.literal("")),
-    priceCents: z.coerce
-      .number({ error: "Enter a price" })
-      .int("Enter a whole amount")
-      .min(0, "Price cannot be negative")
-      .max(10_000_00, "Price looks too large"),
+    priceCents: priceCentsSchema,
     durationMinutes: z.coerce
       .number({ error: "Enter a duration" })
       .int("Enter whole minutes")
       .min(1, "Duration must be at least 1 minute")
       .max(600, "Duration cannot exceed 10 hours"),
-    isActive: z.coerce.boolean().default(true),
+    isActive: booleanish.default(true),
   })
   .strict();
 
@@ -97,8 +119,11 @@ export const clientPatchSchema = clientFields
   .refine(
     (value) =>
       value.isArchived !== undefined ||
-      value.email === undefined ||
-      value.phone === undefined ||
+      // Only enforce contact details when the patch actually touches them. A patch
+      // that omits `email`/`phone` leaves the stored values alone. The previous
+      // condition short-circuited on `email === undefined`, so `{ email: "" }` sailed
+      // through and cleared the last contact method a client had.
+      (value.email === undefined && value.phone === undefined) ||
       needsContact(value),
     {
       message:
@@ -114,18 +139,36 @@ export const appointmentStatusSchema = z.enum([
   "NO_SHOW",
 ]);
 
-export const appointmentSchema = z
-  .object({
-    clientId: trimmed.uuid("Select a client"),
-    serviceIds: z
-      .array(trimmed.uuid())
-      .min(1, "Select at least one service")
-      .max(10, "An appointment cannot exceed 10 services"),
-    startsAt: trimmed.min(1, "Pick a date and time"),
-    staffUserId: trimmed.uuid().optional().or(z.literal("")),
-    cancellationReason: trimmed.max(500).optional(),
-  })
-  .strict();
+/** The exact shape `<input type="datetime-local">` submits, as the studio's wall clock. */
+const dateTimeLocal = trimmed.regex(
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/,
+  "Pick a date and time",
+);
+
+const appointmentFields = z.object({
+  clientId: trimmed.uuid("Select a client"),
+  serviceIds: z
+    .array(trimmed.uuid())
+    .min(1, "Select at least one service")
+    .max(10, "An appointment cannot exceed 10 services"),
+  startsAt: dateTimeLocal,
+  staffUserId: trimmed.uuid().optional().or(z.literal("")),
+});
+
+export const appointmentSchema = appointmentFields.strict();
+
+/**
+ * A patch may move the time, swap the client, or re-pick the services. `endsAt` and
+ * `priceCentsTotal` are never accepted from the client: the API recomputes both so a
+ * caller cannot understate the price or shorten the slot.
+ */
+export const appointmentPatchSchema = appointmentFields
+  .partial()
+  .extend({ cancellationReason: trimmed.max(500).optional() })
+  .strict()
+  .refine((value) => Object.keys(value).length > 0, {
+    message: "Send at least one field to change",
+  });
 
 export const statusUpdateSchema = z
   .object({
@@ -142,6 +185,19 @@ export const statusUpdateSchema = z
     },
   );
 
+/** GET /api/appointments filters. Every field is optional; all are still studio-scoped. */
+export const appointmentQuerySchema = z.object({
+  from: dateTimeLocal.optional(),
+  to: dateTimeLocal.optional(),
+  status: appointmentStatusSchema.optional(),
+  limit: z.coerce
+    .number()
+    .int()
+    .min(1, "Limit must be at least 1")
+    .max(100, "Limit cannot exceed 100")
+    .default(50),
+});
+
 export const staffInviteSchema = z
   .object({
     email: emailSchema,
@@ -154,6 +210,7 @@ export type LoginInput = z.infer<typeof loginSchema>;
 export type ServiceInput = z.infer<typeof serviceSchema>;
 export type ClientInput = z.infer<typeof clientSchema>;
 export type AppointmentInput = z.infer<typeof appointmentSchema>;
+export type AppointmentPatchInput = z.infer<typeof appointmentPatchSchema>;
 export type StatusUpdateInput = z.infer<typeof statusUpdateSchema>;
 export type StaffInviteInput = z.infer<typeof staffInviteSchema>;
 

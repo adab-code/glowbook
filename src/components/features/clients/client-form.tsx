@@ -59,9 +59,15 @@ export function ClientForm({
     setFields({});
 
     try {
+      // `id` is the record's own identity, not an editable field. `clientPatchSchema`
+      // is `.strict()`, so sending it back makes Zod reject the whole request with
+      // `Unrecognized key: "id"` and every edit 400s. The path already carries it.
+      const { id: _ignored, ...payload } = values;
+      void _ignored;
+
       await apiFetch(isEdit ? `/api/clients/${initial?.id}` : "/api/clients", {
         method: isEdit ? "PATCH" : "POST",
-        body: JSON.stringify(values),
+        body: JSON.stringify(payload),
       });
       onDone();
     } catch (error) {
@@ -82,7 +88,7 @@ export function ClientForm({
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-          <FormAlert message={message} />
+          <FormAlert message={message} fields={fields} />
           <FormRow>
             <div className="grid gap-4 sm:grid-cols-2">
               <FormField label="First name" error={fields.firstName}>

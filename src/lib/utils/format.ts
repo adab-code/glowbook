@@ -32,6 +32,16 @@ export function formatTime(date: Date, timeZone: string) {
   }).format(date);
 }
 
+/** "Mon 28 Sep" in the studio's timezone, for range captions. */
+export function formatDayLabel(date: Date, timeZone: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  }).format(date);
+}
+
 export function fullName(person: { firstName: string; lastName: string }) {
   return `${person.firstName} ${person.lastName}`;
 }

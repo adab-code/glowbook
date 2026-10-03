@@ -12,9 +12,9 @@
 | Database | **PostgreSQL on Render** (free tier instance) | The course allows any managed platform the team chooses. Relational integrity matters here: an appointment must always point at a real client, a real service, and a real studio. Render hosts both the database and the web service, which keeps the connection string and the network path in one place |
 | ORM | **Prisma 7.10** | Typed client generated from one schema file, migrations checked into the repo, and `prisma studio` for verifying seed data. Keeps every query type-checked under `strict` TypeScript. On v7 the datasource block carries no `url` and the connection string, migrations path, and seed command live in `prisma7.config.ts` |
 | Auth | **Auth.js v5, Credentials provider** | Course default. Identity lives in our own tables so the studio tenancy rules (FR-006/FR-007) are enforced in our code, not delegated to a vendor |
-| IDs | **UUIDv4 via Prisma `@default(uuid())`** | Random rather than sequential, so IDs cannot be enumerated on public endpoints. Generated **server-side by the database**, not by the client — the original plan called these UUIDv7, which `uuid()` does not produce; swapping to `@default(uuidv7())` is available if the index locality becomes worth it |
+| IDs | **UUIDv4 via Prisma `@default(uuid())`** | Random rather than sequential, so IDs cannot be enumerated on public endpoints. The value is produced by **Prisma, in the query engine, when the row is inserted** — not by PostgreSQL and not by the browser. The column is still typed `@db.Uuid`, so PostgreSQL stores a real UUID and rejects anything malformed. The original plan called these UUIDv7, which `uuid()` does not produce; swapping to `@default(uuidv7())` is available if the index locality becomes worth it |
 | Money | **Integer cents (`Int`), never floats** | `priceCents` avoids the rounding errors that `Decimal`/float pricing introduces in totals |
-| Time | **`DateTime`, currently `timestamp(3)` without a time zone** | Every `Account` stores its own IANA `timezone` and all appointment times are rendered through it, but the stored values are naive. The calendar filters and overlap queries need timezone-aware comparisons, so the day boundary must be computed in the studio's zone before querying — tracked as the first follow-up to Week 04, before the appointment calendar is built |
+| Time | **`DateTime` as `timestamptz(3)`, with a time zone** | Every instant is stored with an offset, so an appointment never drifts when the server, the browser, and the studio are in different zones. Each `Account` separately stores its own IANA `timezone`, and that zone — not the server's — decides what "today" means, so day and week boundaries are computed with `src/lib/utils/datetime.ts` before querying. `startsAt`/`endsAt` are absolute instants; `timezone` is presentation and day-boundary policy only |
 
 **Deployment note:** at runtime the app uses a single variable, `DATABASE_URL`, set to the Render Postgres instance's **Internal Database URL**. An earlier draft of this document also described `DIRECT_URL`, kept for the usual Prisma convention of separating migration traffic from application traffic. Nothing reads it — not `prisma7.config.ts`, not the schema, not any source file — so it is documented here as a leftover rather than a requirement, and Render exposes no pooler on the free tier that would justify adding one. `DATABASE_URL` is not used at build time, though the build does need the variable to *exist*: `src/lib/db.ts` throws at import time when it is missing, and Next evaluates route modules while collecting page data.
 
@@ -171,12 +171,13 @@ Every table carries `createdAt` / `updatedAt` (`@updatedAt` handled by Prisma) a
 | `id` | `uuid` | PK |
 | `accountId` | `uuid` | FK → `Account.id`, Cascade |
 | `email` | `string(255)` | Indexed; no unique constraint — re-inviting after expiry is allowed |
-| `role` | `enum` | Role the invitee will receive |
-| `token` | `string(255)` | **Hashed** at rest, unique, single use |
+| `role` | `enum` | Defaults to `STAFF`; the role the invitee will receive |
+| `token` | `string(255)` | Unique, **SHA-256 hashed** at rest (the column holds the digest, never the token); single use |
+| `acceptedById` | `uuid?` | FK → `StaffUser.id`, `onDelete: SetNull` |
 | `expiresAt` | `DateTime` | `createdAt + 7 days` |
 | `acceptedAt` | `DateTime?` | Null while pending; the invite list filters on this |
 
-Backs FR-007. Accepted invites create the `StaffUser` row and set `acceptedAt` in one transaction.
+Backs FR-007. Accepted invites create the `StaffUser` row and set `acceptedAt` and `acceptedById` in one transaction. `acceptedById` is nullable with `SetNull` rather than required, so deleting a staff member later does not cascade-delete the invite record and erase the audit trail of who joined.
 
 ### 3.4 `Client`
 
@@ -224,7 +225,15 @@ Backs FR-007. Accepted invites create the `StaffUser` row and set `acceptedAt` i
 | `priceCentsTotal` | `int` | Snapshot of the summed service prices **at booking time**, so later price edits do not rewrite history |
 | `createdAt` / `updatedAt` | `DateTime` | — |
 
-**Overlap rule (FR-021) — planned, not built.** There is no `/api/appointments` route yet, so nothing enforces this. The agreed design: on create/update, load the staff member's non-cancelled appointments for that day and reject with `409` when `startsAt < other.endsAt && endsAt > other.startsAt`. A read-then-write check like that is not race-proof — two requests submitted at the same instant can both pass it — so a Postgres `EXCLUDE USING gist` constraint on `tstzrange(startsAt, endsAt)` is the real fix, and should land with the booking handler rather than after it.
+**Overlap rule (FR-021) — built.** `src/lib/appointments/scheduling.ts` owns the check, and all three entry points (POST, PATCH, and the status route that reopens a cancelled booking) go through it. A candidate booking clashes with an existing one when `startsAt < other.endsAt && endsAt > other.startsAt`.
+
+Three decisions are deliberate:
+
+- **Half-open intervals.** Back-to-back bookings are legal: 09:00–09:45 followed by 09:45–10:30 does not clash. Only genuinely shared minutes conflict.
+- **The comparison is on `staffUserId`, including null.** An unassigned booking (`staffUserId = null`) is treated as its own resource, so it does not block another unassigned booking — a studio can run two receptionists booking simultaneously. Overlap is scoped to the same studio via `accountId`.
+- **Only `CANCELLED` is ignored.** `COMPLETED` and `NO_SHOW` still occupy their slot, so a past no-show cannot be double-booked.
+
+**Known limitation.** This is a read-then-write check, so two requests arriving at the same instant can both pass it. The durable fix is a Postgres `EXCLUDE USING gist` constraint on `tstzrange(startsAt, endsAt)`, which needs `CREATE EXTENSION btree_gist` so the `=` on `accountId`/`staffUserId` is indexable. That is a schema migration plus a mapping of `23505` onto the same `409`, and it is deliberately deferred rather than smuggled in here — the `null`-staff case needs a `COALESCE` sentinel column to be expressible as an exclusion constraint at all.
 
 ### 3.7 `AppointmentService` (join table)
 
