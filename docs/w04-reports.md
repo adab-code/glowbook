@@ -51,7 +51,7 @@ The work in this report was done by Aaron alone. The responsibilities below are 
 
 ### What this week's pull request contains
 
-Branch `feat/appointments-booking` into `main`, **open and not merged**: https://github.com/adab-code/glowbook/pull/28.
+Branch `feat/appointments-booking` into `main`: https://github.com/adab-code/glowbook/pull/28. Merged as `8f2c27b`.
 
 - **Three appointment route handlers** — `GET`/`POST /api/appointments`, `GET`/`PATCH`/`DELETE /api/appointments/[id]`, `PATCH /api/appointments/[id]/status` — plus a shared `src/lib/appointments/scheduling.ts` that owns the overlap rule so the create, edit, and reopen paths cannot drift apart.
 - **Four new feature components** — booking form, day view, inline status actions, and the dashboard's upcoming list — plus three route boundaries (`error`, `loading`, `not-found`).
