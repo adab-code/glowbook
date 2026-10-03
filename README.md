@@ -44,7 +44,7 @@ The MVP scope comes from [`docs/glowbook-spec.md`](docs/glowbook-spec.md) and is
 
 ### Prerequisites
 
-- Node.js 20+ (developed and pinned on Node 24)
+- Node.js 24 (pinned by the `engines` field in `package.json`, which Render also reads)
 - npm 10+
 - A Render account for both the web service and the PostgreSQL instance
 - For local development, a PostgreSQL 18 database (local server or any managed instance)
@@ -59,10 +59,10 @@ npm install
 
 ### 2. Configure environment variables
 
-Copy `.env.example` to `.env.local` and fill in the values:
+Copy `.env.example` to `.env` and fill in the values:
 
 ```bash
-cp .env.example .env.local
+cp .env.example .env
 ```
 
 | Variable | Purpose |
@@ -72,19 +72,26 @@ cp .env.example .env.local
 | `AUTH_SECRET` | Secret used by Auth.js to sign session cookies (`npx auth secret` to generate) |
 | `AUTH_TRUST_HOST` | Set to `true` on Render so Auth.js trusts the `X-Forwarded-Host` header from Render's proxy |
 
-Never commit `.env.local` — `.gitignore` already excludes `.env*`.
+Use `.env`, not `.env.local`. Next.js loads both, but `prisma7.config.ts` imports `dotenv/config`, which only reads `.env` — so `npm run db:migrate`, `db:seed` and `db:studio` would fail on a `.env.local` setup while the dev server worked.
+
+Never commit `.env` — `.gitignore` already excludes `.env*` except `.env.example`.
 
 ### 3. Set up the database
 
-*Available once the database issue (#3) lands — the Prisma schema is on the Week 04 milestone.*
+The schema and migrations are in the repository. Two migrations have already been applied: `20260928220926_init` and `20260929140000_timestamps_to_timestamptz`.
 
 ```bash
-npx prisma migrate dev --name init   # apply migrations locally
-npx prisma generate                  # generate the typed client
-npx prisma studio                    # optional: inspect data in a GUI
+npm run db:migrate   # apply pending migrations
+npm run db:generate  # generate the typed client into src/generated/prisma
+npm run db:seed      # create the demo studio, idempotent
+npm run db:studio    # optional: inspect the data in a GUI
 ```
 
-Seed data for local development lives in `prisma/seed.ts`.
+The seed creates one demo studio (`aurea-lashes`) with 4 services, 3 clients and 4 appointments. Re-running it resets that studio and touches no other data. It refuses to run against a production database unless you set `ALLOW_PRODUCTION_SEED=1` and `SEED_ALLOWED_STUDIO`.
+
+Sign in with `owner@glowbook.dev` (the `OWNER`) or `staff@glowbook.dev` (a `STAFF` user) using the value of `SEED_PASSWORD`.
+
+`db:generate` runs automatically on `npm install` via `postinstall`, and the generated client at `src/generated/prisma/` is gitignored.
 
 ### 4. Run the dev server
 
@@ -96,15 +103,29 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ### 5. Verify the full client → server → database cycle
 
-*Available once the first API route handler lands — the service catalog issue (#4) adds `GET /api/services` plus a client component that consumes it.* The `/api/hello` health check is also on the board for Week 04.
+All of this is live now, so sign in and walk it end to end:
+
+1. Sign in at `/login` with `owner@glowbook.dev`.
+2. Open `/services` — the list is rendered by a server component that queries Prisma directly.
+3. Create or edit a service. The client component `POST`s to `/api/services`, the route handler validates with Zod, and the response is re-read through `apiFetch`.
+4. Open `/appointments` and create a booking. `POST /api/appointments` recomputes `endsAt` from the services' durations and snapshots `priceCentsTotal`; both schemas are `.strict()`, so neither can be forged from the client.
+5. Book a second appointment over the same staff member's time. It returns `409` naming `startsAt`.
+6. Run `npm run db:studio` in another terminal and confirm the rows are there.
 
 ### Other scripts
 
 ```bash
-npm run build        # production build
-npm run start        # serve the production build
-npm run lint         # ESLint
+npm run build         # production build
+npm run start         # serve the production build
+npm run typecheck     # tsc --noEmit
+npm run lint          # ESLint
+npm run format        # Prettier, writes
+npm run format:check  # Prettier, check only
 ```
+
+### Testing
+
+There is no automated test suite. CI runs typecheck, lint, format check and build only — it does not connect to a database, so none of those four gates would catch a behavioural regression. This is listed as a known limitation in `docs/w04-reports.md`, and it is the first thing to fix.
 
 ---
 
