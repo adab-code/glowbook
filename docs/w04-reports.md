@@ -10,8 +10,14 @@ Week 04 deliverables: team meeting summary, project setup evidence, the bugs fou
 
 **Synchronous meeting — Thursday, Sept 28, 2026 · 20:00 MDT (Microsoft Teams)**
 
-- **Team members present:** Iván Chulde, Aaron Daniel Alfaro Barra
+- **Team members:** Aaron Daniel Alfaro Barra (lead), Iván Chulde
 - **Team leader for Week 04:** Aaron Daniel Alfaro Barra
+
+### Team status — context for this report
+
+Our last synchronous meeting was Thursday, September 24, 2026. At that point Iván was still deciding whether to continue in the course, so the cross-review of pull requests was left pending rather than scheduled. He later let me know that he had to withdraw from the course and could no longer continue as my teammate. Screenshots of that exchange are available if they are needed.
+
+Two consequences carry into this report. First, the Week 04 work was completed solo; there is no second author to credit on this week's pull request. Second, the cross-review requirement could not be satisfied by either side — not for Week 03, and not going forward. I would rather state that plainly here than let a reviewer infer work that nobody did.
 
 ### Major decisions made
 
@@ -27,9 +33,13 @@ Week 04 deliverables: team meeting summary, project setup evidence, the bugs fou
 | Team member | Week 04 responsibility |
 |---|---|
 | **Aaron Daniel Alfaro Barra** (Week 04 lead) | Appointment API and overlap detection, the timezone conversion layer, seed hardening, the seven defects in §3, documentation corrections |
-| **Iván Chulde** | Design system and shadcn/ui setup, app shell, service and client CRUD, dashboard and calendar UI |
+| **Iván Chulde** | No active participation — see *Team status* above |
 
-Shared: the booking flow is co-owned — the API, validation, and overlap rule by Aaron, the booking and status UI by Iván.
+The work in this report was done by Aaron alone. The responsibilities below are the ones actually carried out this week.
+
+| Area | Owner |
+|---|---|
+| Appointment API and overlap detection, timezone conversion layer, seed hardening, the seven defects in §3, documentation corrections | Aaron |
 
 ---
 
@@ -126,7 +136,7 @@ The Week 03 review was a single approving summary with one recommendation. This 
 
 The pattern across findings 2–4 is the one worth carrying forward: every one of them is invisible when you only read the source. The API was correct while the page built on top of it returned `200` for garbage; the print stylesheet looked deliberate; and the stale redirect is *convincing* on screen, because it renders a real meeting. All three were only caught by fetching the deployed URL and reading status headers.
 
-These findings are recorded as review comments on the pull request. They are not yet fixed: the teammate's branch is still open, and this week's remaining capacity went into GlowBook's own appointments work. Findings 2–4 are all small and self-contained, so they are a reasonable starting point for the teammate's next pull request.
+These findings are recorded as review comments on the pull request. They are not fixed. Findings 2–4 are all small and self-contained, so they are a reasonable starting point for whoever picks up that repository next.
 
 ---
 
@@ -136,7 +146,7 @@ Stated plainly, because a report that lists only what works is not useful to a r
 
 - **Deployment** — blocked on issue #8. No Render deployment was started, so there is no live link to submit.
 - **The teammate's review findings are unfixed.** §5 lists five findings against `ivanchulde/sacrament-meetings#1`. Three are behavioural bugs in production right now: the print stylesheet hides pagination links, `/meetings/<bad-id>` returns `200` instead of `404`, and the current-meeting redirect is frozen at build time to the September 20th meeting. None are mine to land — the repository belongs to the teammate.
-- **Cross-member pull request review** — the teammate still holds read-only access, so every pull request to date, including this one, was authored and merged by the same person. The Week 03 report named this as the first item to fix and it is still open. Granting write access and landing one genuinely reviewed pull request is what closes it.
+- **Cross-member pull request review** — not satisfiable. Every pull request to date, including this one, was authored and merged by the same person. The cause is not a permissions oversight: my teammate withdrew from the course, so there is no second member to review or to be reviewed. The Week 03 report named this as the first item to fix, and it was the reason I invited him as a collaborator in advance. His withdrawal closed it out. This affects Week 03 and every remaining week, since the requirement applies to each submission.
 - **Week and month grid calendar (FR-018).** The API already accepts arbitrary `from`/`to` windows, so the data side is ready; the grid UI is not built. The day view and list satisfy the requirement in part, not in full.
 - **Staff-member filter on the appointment list (FR-023).** The query schema accepts `status` but not `staffUserId`. Booking and reassignment both support staff; filtering the list by them does not.
 - **Rescheduling has no UI.** `PATCH /api/appointments/[id]` supports it and it is tested, but the day view offers status changes and deletion only. FR-019 is met by the API, not by the interface.
