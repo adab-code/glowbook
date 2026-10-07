@@ -1,5 +1,12 @@
+import type { Metadata } from "next";
 import { AuthCard } from "@/components/layout/auth-card";
 import { ForgotPasswordForm } from "@/components/features/auth/forgot-password-form";
+
+export const metadata: Metadata = {
+  title: "Forgot password",
+  description:
+    "Request a link to reset your GlowBook password. Links work once and expire after an hour.",
+};
 
 export default function ForgotPasswordPage() {
   return (

@@ -14,7 +14,33 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth/session";
 import { formatDateTime, formatMoney, fullName } from "@/lib/utils/format";
 
-export const metadata: Metadata = { title: "Client" };
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const user = await requireUser();
+  const { id } = await params;
+
+  // Scoped to the session's studio: a client id from another account must not
+  // leak any of its details through a page title or description.
+  const client = await db.client.findFirst({
+    where: { id, accountId: user.accountId },
+    select: { firstName: true, lastName: true },
+  });
+
+  if (!client) {
+    return {
+      title: "Client not found",
+      description: "The requested client could not be found.",
+    };
+  }
+
+  return {
+    title: fullName(client),
+    description: `${fullName(client)}'s contact details and appointment history at ${user.studioName}.`,
+  };
+}
 
 export default async function ClientDetailPage({
   params,

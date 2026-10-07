@@ -3,7 +3,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 
-export const metadata: Metadata = { title: "Team" };
+export const metadata: Metadata = {
+  title: "Team",
+  description:
+    "Invite staff, assign roles and control who can edit the schedule.",
+};
 
 export default function TeamPage() {
   return (

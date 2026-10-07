@@ -4,7 +4,11 @@ import { ClientManager } from "@/components/features/clients/client-manager";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth/session";
 
-export const metadata: Metadata = { title: "Clients" };
+export const metadata: Metadata = {
+  title: "Clients",
+  description:
+    "Contact details, preferences and appointment history for everyone your studio serves.",
+};
 
 export default async function ClientsPage() {
   const user = await requireUser();

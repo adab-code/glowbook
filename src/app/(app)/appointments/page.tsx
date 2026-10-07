@@ -7,7 +7,11 @@ import { zonedDayBounds, toDateTimeLocalValue } from "@/lib/utils/datetime";
 import { formatDateTime, formatDayLabel, fullName } from "@/lib/utils/format";
 import { appointmentInclude } from "@/lib/appointments/types";
 
-export const metadata: Metadata = { title: "Appointments" };
+export const metadata: Metadata = {
+  title: "Appointments",
+  description:
+    "Book clients into slots and manage today's appointment list, in your studio's timezone, with overlap protection.",
+};
 
 export default async function AppointmentsPage() {
   const user = await requireUser();

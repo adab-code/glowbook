@@ -1,8 +1,14 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { AuthCard } from "@/components/layout/auth-card";
 import { SignupForm } from "@/components/features/auth/signup-form";
+
+export const metadata: Metadata = {
+  title: "Create your studio",
+  description: "Start scheduling appointments for your studio with GlowBook.",
+};
 
 export default async function SignupPage() {
   if (await auth()) redirect("/dashboard");

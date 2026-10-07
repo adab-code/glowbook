@@ -1,7 +1,23 @@
 import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { AppHeader } from "@/components/layout/app-header";
 import { AppSidebar } from "@/components/layout/app-sidebar";
+
+// The workspace is private: every route here already requires a valid session
+// (see requireUser), but the HTML is still reachable by crawlers. Keeping it out
+// of search indexes prevents studio data from leaking through meta descriptions.
+export const metadata: Metadata = {
+  title: "Dashboard",
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: {
+      index: false,
+      follow: false,
+    },
+  },
+};
 
 export default async function AppLayout({
   children,
