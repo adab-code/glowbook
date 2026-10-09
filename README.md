@@ -71,12 +71,11 @@ cp .env.example .env.local
 | `DIRECT_URL` | **Not used.** Nothing reads it — not `prisma7.config.ts`, not the schema, not any source file. It survives in `.env.example` from the usual Prisma convention of separating migration traffic from app traffic. Prisma 7 reads `DATABASE_URL` for both, and Render's free tier exposes no separate pooler that would justify wiring one up |
 | `AUTH_SECRET` | Secret used by Auth.js to sign session cookies (`npx auth secret` to generate) |
 | `AUTH_TRUST_HOST` | Set to `true` on Render so Auth.js trusts the `X-Forwarded-Host` header from Render's proxy |
+| `NEXT_PUBLIC_SITE_URL` | Public URL of the deploy (e.g. `https://glowbook-lzts.onrender.com`). Used for `metadataBase` and Open Graph links; defaults to `http://localhost:3000` locally |
 
 Never commit `.env.local` — `.gitignore` already excludes `.env*`.
 
 ### 3. Set up the database
-
-*Available once the database issue (#3) lands — the Prisma schema is on the Week 04 milestone.*
 
 ```bash
 npx prisma migrate dev --name init   # apply migrations locally
@@ -96,7 +95,18 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ### 5. Verify the full client → server → database cycle
 
-*Available once the first API route handler lands — the service catalog issue (#4) adds `GET /api/services` plus a client component that consumes it.* The `/api/hello` health check is also on the board for Week 04.
+Sign in with a demo account (see Demo credentials below), then open `/services`: the list is rendered by `service-manager.tsx` calling `GET /api/services`, which reads the studio's rows via Prisma. Create/edit/archive a service and watch the list update — that is the client → route handler → database loop.
+
+### Demo credentials
+
+Seeded by `prisma/seed.ts` (`npx prisma db seed`):
+
+| Role | Email | Password |
+|---|---|---|
+| Owner | `owner@glowbook.dev` | value of `SEED_PASSWORD` (`GlowBook!2026` by default) |
+| Staff | `staff@glowbook.dev` | same as above |
+
+Never use these on a real database — the seed resets the `aurea-lashes` studio and refuses to run in production unless `ALLOW_PRODUCTION_SEED=1` + `SEED_ALLOWED_STUDIO=aurea-lashes`.
 
 ### Other scripts
 
@@ -153,7 +163,7 @@ If this project ever needs to be genuinely live, the minimum fix is a paid Rende
 
 ## Project Structure
 
-The structure below reflects the repository as it stands after the Week 04 milestone (issues #1–#5).
+The structure below reflects the repository as it stands after the Week 05 milestone (auth + metadata + services/clients/appointments CRUD).
 
 ```
 src/
@@ -169,7 +179,7 @@ src/
     ui/                → design-system primitives: button, card, input, label
     shared/            → form-field, submit-button, confirm-dialog, status-badge, empty-state, page-header, spinner
     layout/            → auth-card, app-sidebar, app-header
-    features/          → auth/, services/, clients/  *(appointments/ and staff/ not built yet)*
+    features/          → auth/, services/, clients/, appointments/  *(staff/ not built yet)*
   lib/
     db.ts              → Prisma 7 client singleton with the @prisma/adapter-pg driver adapter
     auth/              → session.ts (requireUser / requireOwner), actions.ts (server actions)
@@ -189,7 +199,7 @@ specs/001-glowbook-booking/  → original Spec-Kit working spec (superseded by d
 .github/copilot-instructions.md → AI assistant rules for the whole team
 ```
 
-\* `appointments`, `team`, and `settings` are stubs or read-only — see [Known Issues](#known-issues--opportunities-for-improvement).
+\* `team` is a stub and `settings` is read-only — see [Known Issues](#known-issues--opportunities-for-improvement). `appointments` is a working day-view with book/edit/cancel/status (month view is Phase 2).
 
 **Rendering strategy:** server components by default; `"use client"` only where interactivity is required (forms, optimistic list updates). Data fetching happens in server components and route handlers, not in client components.
 
@@ -214,6 +224,12 @@ All endpoints are route handlers under `src/app/api`. They return JSON, require 
 | `POST` | `/api/clients` | Create a client | Yes |
 | `PATCH` | `/api/clients/[id]` | Update a client's details, notes, or archived flag | Yes |
 | `DELETE` | `/api/clients/[id]` | Archive a client (blocked while they have upcoming appointments) | Yes |
+| `GET` | `/api/appointments` | List appointments, filter by status/date | Yes |
+| `POST` | `/api/appointments` | Book an appointment; `409` on overlap | Yes |
+| `GET` | `/api/appointments/[id]` | Read one appointment | Yes |
+| `PATCH` | `/api/appointments/[id]` | Update date, time, client, or services | Yes |
+| `PATCH` | `/api/appointments/[id]/status` | Update status (Scheduled, Completed, Cancelled, No-show) | Yes |
+| `DELETE` | `/api/appointments/[id]` | Delete an appointment record | Yes |
 
 Sign-up, sign-out, and password reset are React Server Actions in `src/lib/auth/actions.ts`, not REST endpoints — the session cookie is issued by Auth.js.
 
@@ -225,12 +241,6 @@ Sign-up, sign-out, and password reset are React Server Actions in `src/lib/auth/
 | `POST` | `/api/staff/invitations` | Invite a staff member by email | Yes (owner) |
 | `GET` | `/api/services/[id]` | Read one service | Yes |
 | `GET` | `/api/clients/[id]` | Read a client with their appointments | Yes |
-| `GET` | `/api/appointments` | List appointments, filter by status/date/staff | Yes |
-| `POST` | `/api/appointments` | Book an appointment; `409` on overlap | Yes |
-| `GET` | `/api/appointments/[id]` | Read one appointment | Yes |
-| `PATCH` | `/api/appointments/[id]` | Update date, time, client, or services | Yes |
-| `PATCH` | `/api/appointments/[id]/status` | Update status (Scheduled, Completed, Cancelled, No-show) | Yes |
-| `DELETE` | `/api/appointments/[id]` | Delete an appointment record | Yes |
 
 **Error shape:** `{ "error": { "code": string, "message": string, "fields"?: Record<string, string> } }` — `400` validation, `401` unauthenticated, `403` wrong studio, `404` not found, `409` conflict (overlapping booking or duplicate email).
 
@@ -251,15 +261,18 @@ Sign-up, sign-out, and password reset are React Server Actions in `src/lib/auth/
 
 **Not built yet (next milestones):**
 
-- **Appointment calendar** — the core value of the product. `/appointments` is a stub and no appointment route handlers exist. Booking, overlap detection, status transitions, and the calendar view are the next slice (board issue #6, P1).
-- **Staff invitations** — the `StaffInvite` model and `requireOwner()` exist, but there is no `/api/staff/invitations` handler and `/team` is a stub (board issue #8 backlog).
-- **Studio settings editing** — `/settings` is read-only; there is no update path.
-- **No `error.tsx` / `loading.tsx` / `not-found.tsx` boundaries** — failures currently fall through to Next.js defaults.
+- **Appointment month view** — `/appointments` is a working single-day view with book/edit/cancel/status plus staff-scoped overlap detection (`409`). A month grid and drag-to-reschedule are Phase 2.
+- **Staff invitations** — the `StaffInvite` model and `requireOwner()` exist, but there is no `/api/staff/invitations` handler and `/team` shows an empty state.
+- **Studio settings editing** — `/settings` is read-only; values are set at signup and there is no update path yet.
+
+**Already handled (kept here because older milestones listed them as gaps):**
+
+- Route boundaries exist: `src/app/(app)/error.tsx` (retry + back to dashboard), `src/app/(app)/loading.tsx` (spinner, `role="status"`), `src/app/not-found.tsx` (branded 404 with way back).
+- Day/week windows resolve in the studio's `Account.timezone` (`zonedDayBounds` / `zonedWeekBounds`); times render through the same zone.
 
 **Known limitations of what is built:**
 
-- Overlap detection is planned as an application-level check rather than a Postgres `EXCLUDE USING gist` constraint on `tstzrange`. That check is **not** race-proof: two requests submitted at the same instant can both pass it, so the constraint is the durable fix and should land with the booking handler.
-- The dashboard's "today" and "this week" windows are computed in server-local time rather than the studio's `Account.timezone`, so a UTC host reports the wrong day boundary for studios outside UTC. Times are still rendered through `formatTime(..., timezone)`.
+- Overlap detection is an application-level check (`assertNoOverlap` in `src/lib/appointments/scheduling.ts`), not a Postgres `EXCLUDE USING gist` constraint on `tstzrange`. That check is **not** race-proof: two requests submitted at the same instant can both pass it, so the constraint is the durable Phase 2 fix.
 - Password-reset links are printed to the server console rather than emailed — there is no mail provider wired up yet.
 - Single-day schedule view only; a month view and drag-to-reschedule are Phase 2.
 - No automated test suite yet; the spec's acceptance scenarios are written to be directly testable and should become the first Vitest/Playwright suite in a later sprint.
