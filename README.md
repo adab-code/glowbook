@@ -24,6 +24,7 @@ The MVP scope comes from [`docs/glowbook-spec.md`](docs/glowbook-spec.md) and is
 - **Client profiles** — CRUD with free-form notes (allergies, preferences) and appointment history
 - **Appointment calendar** — create, view, edit, and cancel bookings with double-booking (overlap) detection
 - **Daily dashboard** — today's appointments in chronological order plus an upcoming preview, with status updates inline
+- **Discoverability** — per-page titles and descriptions, a code-generated Open Graph image, and `noindex` on the private `(app)` routes so studio data is never surfaced to crawlers
 
 ---
 
@@ -133,7 +134,7 @@ The course constitution allows "Vercel or similar", so this project is hosted on
    | Node version | from `engines` in `package.json` (24) |
    | Health check path | `/login` |
 
-4. Add the environment variables under **Environment** for the web service: `DATABASE_URL`, `AUTH_SECRET`, `AUTH_TRUST_HOST=true`. Migrations are run manually from a local machine — see [`docs/data-model.md`](docs/data-model.md) §1.
+4. Add the environment variables under **Environment** for the web service: `DATABASE_URL`, `AUTH_SECRET`, `AUTH_TRUST_HOST=true`, and `NEXT_PUBLIC_SITE_URL=https://<your-service>.onrender.com` (used for `metadataBase` and Open Graph links). Migrations are run manually from a local machine — see [`docs/data-model.md`](docs/data-model.md) §1.
 5. In the **Postgres** instance settings, open **Access** and add the web service. Without this the service cannot reach the database over Render's internal network.
 6. Run migrations once against the production database — Render will not do it for you:
 
@@ -194,7 +195,7 @@ docs/
   architecture.md    → routes, components, hierarchy, Week 04 priority ranking
   data-model.md      → entities, fields, relationships
   design-system.md   → palette, typography, spacing
-  w02-reports.md, w03-reports.md, w04-reports.md
+  w02-reports.md, w03-reports.md, w04-reports.md, w05-reports.md
 specs/001-glowbook-booking/  → original Spec-Kit working spec (superseded by docs/glowbook-spec.md)
 .github/copilot-instructions.md → AI assistant rules for the whole team
 ```

@@ -1,6 +1,6 @@
 # GlowBook — Component Architecture
 
-**Status:** agreed in the Week 03 team meeting · **Last updated:** 2026-09-29
+**Status:** agreed in the Week 03 team meeting · **Last updated:** 2026-10-09
 
 **Companion docs:** [`data-model.md`](./data-model.md) · [`design-system.md`](./design-system.md) · [`glowbook-spec.md`](./glowbook-spec.md)
 
@@ -33,7 +33,7 @@ Next.js 16 specifics we follow: request interception lives in `src/proxy.ts` (Ne
 
 The `(auth)` group has no `layout.tsx`. The centring lives in the `AuthCard` wrapper instead, which is why all four pages repeat the same two wrapper elements.
 
-### Built — 17 routes (12 pages + 5 route handlers)
+### Built — 20 routes (12 pages + 8 route handlers)
 
 | Route | Purpose | State |
 |---|---|---|
@@ -43,33 +43,30 @@ The `(auth)` group has no `layout.tsx`. The centring lives in the `AuthCard` wra
 | `/dashboard` | Four metrics + the next five appointments | Built |
 | `/clients` · `/clients/[id]` | Client list, profile, history | Built |
 | `/services` | Service catalog list | Built |
+| `/appointments` | Working day view: book, edit, cancel, status | Built — month view is Phase 2 |
 | `/settings` | Read-only studio details, timezone, currency | Built — read-only, editing is the next milestone |
 | `/team` | Staff and invitations | Placeholder — `EmptyState` only |
-| `/appointments` | — | Placeholder — `EmptyState` only |
 | `GET/POST /api/clients` | Client list, create | Built |
 | `PATCH/DELETE /api/clients/[id]` | Edit, archive-or-delete | Built |
 | `GET/POST /api/services` | Service list, create | Built |
 | `PATCH/DELETE /api/services/[id]` | Edit, archive-or-delete | Built |
+| `GET/POST /api/appointments` | Appointment list, book (`409` on overlap) | Built |
+| `GET/PATCH/DELETE /api/appointments/[id]` | Read, reschedule, delete | Built |
+| `PATCH /api/appointments/[id]/status` | Status transitions | Built |
 | `POST /api/auth/[...nextauth]` | Auth.js credentials handler | Built |
 
-`/appointments` and `/team` render an explicit "not built yet" `EmptyState` rather than a broken page. `/settings` is a working read-only page, not a placeholder — it shows the studio's name, timezone and currency but does not save changes yet.
+`/team` renders an explicit "not built yet" `EmptyState` rather than a broken page. `/appointments` is a working single-day view (book / edit / cancel / status); `/settings` is a working read-only page — it shows the studio's name, timezone and currency but does not save changes yet.
 
 ### Planned — not yet built
 
 | Route | Purpose | Priority |
 |---|---|---|
-| `/calendar` | Day/week schedule with filters by status and staff (US4) | **P1** |
-| `/appointments/new` | Book an appointment: client, services, date, time (US4) | **P1** |
-| `/appointments/[id]` | Appointment detail, edit, cancel, status change (US4) | **P1** |
-| `/clients/new` · `/clients/[id]/edit` | Create and edit a client (US3) | **P1** |
-| `/services/new` · `/services/[id]/edit` | Create and edit a service (US2) | **P1** |
+| `/calendar` | Week/month schedule with filters by status and staff (US4) | P2 |
 | `/settings/staff` | Owner-only: invite staff, list pending invitations (US1) | P2 |
 | `/settings/profile` | Studio name, owner email and password | P2 |
-| `GET/POST /api/appointments` · `PATCH/DELETE /api/appointments/[id]` | Appointment CRUD | **P1** |
-| `PATCH /api/appointments/[id]/status` | Status transitions | **P1** |
 | `GET/POST /api/staff/invitations` | Staff invites (owner only) | P2 |
 
-Client and service create/edit currently happen in a dialog on the list route rather than at their own URL, so those planned paths are a routing decision still open, not a gap.
+Client, service and appointment create/edit currently happen in a dialog on their list route rather than at their own URL, so those planned paths are a routing decision still open, not a gap. The appointment CRUD, status, and overlap handlers are built (see the table above).
 
 **Deviations from the original plan, and why:**
 
@@ -116,6 +113,7 @@ There is no `AppShell` component. The sidebar/header/content shell is written in
 | `auth/` | `LoginForm`, `SignupForm`, `ForgotPasswordForm`, `ResetPasswordForm` | — |
 | `clients/` | `ClientManager`, `ClientForm` | `NotesEditor`, `ClientHistory` |
 | `services/` | `ServiceManager`, `ServiceForm` | `ServicePicker` |
+| `appointments/` | `AppointmentManager`, `AppointmentForm`, `AppointmentStatusActions`, `UpcomingAppointments` | `CalendarFilters` |
 | `dashboard/` | — | `TodayList`, `UpcomingPreview`, `QuickStats` |
 | `calendar/` | — | `CalendarView`, `DayColumn`, `AppointmentBlock`, `CalendarFilters`, `BookingForm` |
 | `staff/` | — | `StaffList`, `InviteStaffForm`, `InvitationStatus` |
@@ -130,7 +128,7 @@ These follow shadcn/ui conventions — `cn()`, `cva` variants, `data-slot` attri
 
 ### Count
 
-**22 components built — 3 layout, 7 shared, 8 feature, 4 UI.** Eight of them (`EmptyState`, `StatusBadge`, `ConfirmDialog`, `FormField`, `SubmitButton`, `PageHeader`, `Spinner`, `AuthCard`) are imported by two or more files, which satisfies the "at least 5 components used across multiple pages" requirement. The original plan of ~40 was never wrong as a plan; it was wrong to present it as current state.
+**26 components built — 3 layout, 7 shared, 12 feature, 4 UI.** Eight of them (`EmptyState`, `StatusBadge`, `ConfirmDialog`, `FormField`, `SubmitButton`, `PageHeader`, `Spinner`, `AuthCard`) are imported by two or more files, which satisfies the "at least 5 components used across multiple pages" requirement. The original plan of ~40 was never wrong as a plan; it was wrong to present it as current state.
 
 ---
 
@@ -165,13 +163,17 @@ graph TD
   Services --> SManager["ServiceManager → ServiceForm"]
 
   Page --> ClientDetail["/clients/[id]"]
+  Page --> Appointments["/appointments — day view"]
+  Appointments --> AManager["AppointmentManager → AppointmentForm"]
   Page --> Settings["/settings — read-only details"]
-  Page --> Placeholder["/appointments · /team → EmptyState"]
+  Page --> Placeholder["/team → EmptyState"]
 
   Clients --> CApi["GET/POST/PATCH/DELETE /api/clients"]
   Services --> SApi["GET/POST/PATCH/DELETE /api/services"]
+  Appointments --> AApi["GET/POST/PATCH/DELETE /api/appointments"]
   CApi --> Prisma["lib/db.ts → Prisma → PostgreSQL"]
   SApi --> Prisma
+  AApi --> Prisma
   Dash --> Prisma
 ```
 
@@ -210,13 +212,13 @@ async function handleArchive(client: ClientWithCount) {
 
 Three things to know about this, because they differ from the original plan:
 
-- **Prisma is imported directly in server components.** There is no `src/lib/queries/` layer. The single shared Prisma client is `src/lib/db.ts`; queries are written inline next to the page that needs them. A `lib/queries/` layer is still worth adding once the appointment queries need shared overlap logic.
+- **Prisma is imported directly in server components.** There is no `src/lib/queries/` layer. The single shared Prisma client is `src/lib/db.ts`; queries are written inline next to the page that needs them. The one shared piece of query logic so far is the overlap rule in `src/lib/appointments/scheduling.ts`; a broader `lib/queries/` layer is still open.
 - **`revalidatePath()` is not used.** Mutations are followed by a client-side re-read through `apiFetch`, so the server component's first render is the only one. This is why the list pages fetch twice in total across a session rather than once per render.
 - **There is no client-side data-fetching library.** One `apiFetch` helper in `src/lib/utils/api-client.ts` wraps every call.
 
 ---
 
-## 6. Week 04 priority ranking
+## 6. Priority ranking (W04 → W05)
 
 | Rank | Work | Owner | Status | Why first |
 |---|---|---|---|---|
@@ -226,7 +228,10 @@ Three things to know about this, because they differ from the original plan:
 | 4 | Service catalog CRUD end to end | Iván | Done | Smallest complete vertical slice |
 | 5 | Client profiles CRUD + notes | Iván | Done | Second data model; satisfies the two-model CRUD requirement |
 | 6 | Dashboard | Iván | Done | Depends on 4 and 5 |
-| 7 | Appointments: booking, overlap detection, status | Both | **Next** | Core value; depends on 4 and 5 |
-| 8 | Calendar and staff invitations | Both | Planned | Depends on 7 |
+| 7 | Appointments: booking, overlap detection, status | Aaron | Done | Core value; depends on 4 and 5 |
+| 8 | Discoverability metadata, Open Graph image, `noindex` (W05) | Aaron | Done | Makes each route discoverable without exposing studio data |
+| 9 | Month view, staff invitations, editable settings, tests | Aaron | Carryover | Tracked as #30–#36, not half-built to look complete |
+
+**Week 05 outcome:** the shipped slice is authentication + discoverability metadata (PR #38, merged as `f77a0d76`). Remaining scope is triaged into issues #30–#36 for Week 06.
 
 **Definition of done for every issue:** feature branch → PR → one approving review from the other team member → `npm run typecheck`, `npm run lint`, `npm run format:check` and `npm run build` pass (all four run in CI) → the issue's acceptance scenarios from [`glowbook-spec.md`](./glowbook-spec.md) are demonstrable.
