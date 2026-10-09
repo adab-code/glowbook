@@ -194,7 +194,7 @@ docs/
   architecture.md    → routes, components, hierarchy, Week 04 priority ranking
   data-model.md      → entities, fields, relationships
   design-system.md   → palette, typography, spacing
-  w02-reports.md, w03-reports.md
+  w02-reports.md, w03-reports.md, w04-reports.md
 specs/001-glowbook-booking/  → original Spec-Kit working spec (superseded by docs/glowbook-spec.md)
 .github/copilot-instructions.md → AI assistant rules for the whole team
 ```
