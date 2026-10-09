@@ -1,5 +1,12 @@
+import type { Metadata } from "next";
 import { AuthCard } from "@/components/layout/auth-card";
 import { ResetPasswordForm } from "@/components/features/auth/reset-password-form";
+
+export const metadata: Metadata = {
+  title: "Reset password",
+  description:
+    "Choose a new password for your GlowBook account. Reset links work once and expire after an hour.",
+};
 
 export default async function ResetPasswordPage({
   searchParams,

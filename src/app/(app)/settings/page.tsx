@@ -9,7 +9,10 @@ import {
 import { PageHeader } from "@/components/shared/page-header";
 import { requireUser } from "@/lib/auth/session";
 
-export const metadata: Metadata = { title: "Settings" };
+export const metadata: Metadata = {
+  title: "Settings",
+  description: "Studio details, timezone and currency used across the app.",
+};
 
 export default async function SettingsPage() {
   const user = await requireUser();

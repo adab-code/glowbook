@@ -18,13 +18,31 @@ const fraunces = Fraunces({
   display: "swap",
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: {
     default: "GlowBook",
     template: "%s · GlowBook",
   },
   description:
     "GlowBook is a salon and studio booking platform built with Next.js, PostgreSQL and Prisma.",
+  applicationName: "GlowBook",
+  openGraph: {
+    type: "website",
+    siteName: "GlowBook",
+    locale: "en_US",
+    title: "GlowBook — appointment and client management for beauty studios",
+    description:
+      "GlowBook keeps your studio's client list, services and appointments in one place, so you can stop juggling messages and paper notebooks.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "GlowBook — appointment and client management for beauty studios",
+    description:
+      "GlowBook keeps your studio's client list, services and appointments in one place, so you can stop juggling messages and paper notebooks.",
+  },
 };
 
 export default function RootLayout({

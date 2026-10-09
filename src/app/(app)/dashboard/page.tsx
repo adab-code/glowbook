@@ -14,7 +14,11 @@ import {
   formatMoney,
 } from "@/lib/utils/format";
 
-export const metadata: Metadata = { title: "Dashboard" };
+export const metadata: Metadata = {
+  title: "Dashboard",
+  description:
+    "A daily overview of your studio: upcoming appointments, active clients, bookable services and revenue for the week.",
+};
 
 export default async function DashboardPage() {
   const user = await requireUser();

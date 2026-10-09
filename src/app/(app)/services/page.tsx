@@ -4,7 +4,11 @@ import { ServiceManager } from "@/components/features/services/service-manager";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth/session";
 
-export const metadata: Metadata = { title: "Services" };
+export const metadata: Metadata = {
+  title: "Services",
+  description:
+    "Everything your studio offers, with the price and duration used to build appointments.",
+};
 
 export default async function ServicesPage() {
   const user = await requireUser();

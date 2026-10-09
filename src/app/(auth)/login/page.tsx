@@ -1,6 +1,12 @@
 import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 import { AuthCard } from "@/components/layout/auth-card";
 import { LoginForm } from "@/components/features/auth/login-form";
+
+export const metadata: Metadata = {
+  title: "Sign in",
+  description: "Sign in to manage your studio's schedule with GlowBook.",
+};
 
 export default async function LoginPage({
   searchParams,
