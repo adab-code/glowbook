@@ -23,9 +23,12 @@ import type { AppointmentWithRelations } from "@/lib/appointments/types";
 export function UpcomingAppointments({
   initialAppointments,
   timeZone,
+  canDelete,
 }: {
   initialAppointments: AppointmentWithRelations[];
   timeZone: string;
+  /** False for STAFF: deleting a booking is owner-only (see DELETE /api/appointments/:id). */
+  canDelete: boolean;
 }) {
   const [appointments, setAppointments] = useState(initialAppointments);
 
@@ -93,6 +96,7 @@ export function UpcomingAppointments({
                 </div>
                 <AppointmentStatusActions
                   appointment={appointment}
+                  canDelete={canDelete}
                   onChanged={(next) =>
                     setAppointments((current) =>
                       current.map((item) =>

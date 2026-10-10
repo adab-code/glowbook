@@ -24,7 +24,10 @@ export default async function ClientsPage() {
         title="Clients"
         description="Contact details, preferences and appointment history for everyone your studio serves."
       />
-      <ClientManager initialClients={clients} />
+      <ClientManager
+        initialClients={clients}
+        canDelete={user.role === "OWNER"}
+      />
     </>
   );
 }

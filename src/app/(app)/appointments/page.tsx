@@ -56,6 +56,7 @@ export default async function AppointmentsPage() {
       />
       <AppointmentManager
         initialAppointments={appointments}
+        canDelete={user.role === "OWNER"}
         dayLabel={formatDayLabel(now, user.timezone)}
         nowLabel={formatDateTime(now, user.timezone)}
         dayQuery={{

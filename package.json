@@ -18,6 +18,8 @@
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "postinstall": "prisma generate"
   },
   "dependencies": {
@@ -51,7 +53,8 @@
     "prisma": "^7.10.0",
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.7"
   },
   "allowScripts": {
     "@prisma/engines@7.10.0": true

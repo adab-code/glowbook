@@ -209,6 +209,7 @@ A signed-in user opens the dashboard, so that they can see, at a glance, today's
 - **Single-workspace tenancy.** A studio is the isolation boundary. Staff invited to a studio share its clients, services, and appointments; there is no cross-studio sharing in the MVP.
 - **Email-based invitations.** Staff invitations and password resets are delivered by email link. The MVP assumes a transactional email provider; invitations expire after 7 days and reset links after 1 hour.
 - **Owner is the first signup.** Whoever creates the studio account becomes its `OWNER` with full permissions, including staff management.
+- **Permission matrix (Week 06).** `STAFF` members can create, read, update, and change the status of clients, services, and appointments — the day-to-day work. Destructive and studio-level writes are `OWNER`-only and return `403` for staff: `DELETE /api/services/:id`, `DELETE /api/clients/:id`, `DELETE /api/appointments/:id`, `PATCH /api/account`, and staff invitations. The UI hides the corresponding buttons for staff, but the route handler is the enforcement point, never the UI.
 - **Single timezone per studio.** Appointments are stored in UTC and rendered in the studio's configured timezone, so a travelling user sees the studio's schedule.
 - **Money in integer cents.** Prices are whole-cent integers in the studio's currency; no taxes, tips, deposits, or payouts in the MVP.
 - **Duration comes from services.** `Appointment.endsAt` is derived from the selected services' `durationMinutes`; there is no custom duration override per appointment.

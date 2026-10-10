@@ -31,6 +31,7 @@ export function AppointmentManager({
   dayLabel,
   nowLabel,
   dayQuery,
+  canDelete,
 }: {
   initialAppointments: AppointmentWithRelations[];
   clients: Option[];
@@ -42,6 +43,8 @@ export function AppointmentManager({
   nowLabel: string;
   /** `from`/`to` for this day, as `YYYY-MM-DDTHH:mm` in the studio's wall clock. */
   dayQuery: { from: string; to: string };
+  /** False for STAFF: deleting a booking is owner-only (see DELETE /api/appointments/:id). */
+  canDelete: boolean;
 }) {
   const [appointments, setAppointments] = useState(initialAppointments);
   const [booking, setBooking] = useState(false);
@@ -159,6 +162,7 @@ export function AppointmentManager({
 
                   <AppointmentStatusActions
                     appointment={appointment}
+                    canDelete={canDelete}
                     onChanged={(next) =>
                       setAppointments((current) =>
                         current.map((item) =>

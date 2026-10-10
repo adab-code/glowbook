@@ -46,6 +46,7 @@ Entities: `Account`, `StaffUser`, `StaffInvite`, `Client`, `Service`, `Appointme
 - Return the shared error shape: `{ error: { code, message, fields? } }`.
 - Status codes: `400` validation, `401` unauthenticated, `403` forbidden action, `404` missing or wrong studio, `409` conflict. No built handler returns `409` yet — a duplicate email is a field-level validation error, and the delete rules above answer with `400` or `200`. `409` is reserved for the appointment overlap check that is planned but not built.
 - Auth failures return a generic "invalid email or password" — never reveal whether an account exists.
+- Permission matrix: STAFF can do day-to-day CRUD and status changes; destructive writes are OWNER-only via `requireOwner()` (`src/lib/auth/session.ts`) — the three DELETE handlers, `PATCH /api/account`, and staff invites. UI buttons mirror this with a `canDelete` prop, but the handler is the enforcement point.
 - Register and session routes are the Auth.js catch-all at `app/api/auth/[...nextauth]/route.ts`. Sign-up, password reset and sign-out are React Server Actions in `src/lib/auth/actions.ts`, not REST endpoints.
 
 ## Styling
