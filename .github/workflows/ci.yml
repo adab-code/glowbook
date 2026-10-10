@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   verify:
-    name: Typecheck, lint, format, build
+    name: Typecheck, lint, tests, format, build
     runs-on: ubuntu-latest
 
     steps:
@@ -35,6 +35,12 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+      # Unit tests cover pure modules only (utils, validations): anything
+      # importing `src/lib/db.ts` needs DATABASE_URL, so it stays out of
+      # `vitest run` — see vitest.config.ts.
+      - name: Unit tests
+        run: npm run test
 
       - name: Check formatting
         run: npm run format:check

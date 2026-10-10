@@ -18,8 +18,11 @@ type ClientWithCount = Client & {
 
 export function ClientManager({
   initialClients,
+  canDelete,
 }: {
   initialClients: ClientWithCount[];
+  /** False for STAFF: archiving a client is owner-only (see DELETE /api/clients/:id). */
+  canDelete: boolean;
 }) {
   const [clients, setClients] = useState(initialClients);
   const [creating, setCreating] = useState(false);
@@ -186,17 +189,19 @@ export function ClientManager({
                     >
                       Edit
                     </Button>
-                    <ConfirmDialog
-                      trigger={
-                        <Button variant="danger" size="sm">
-                          Archive
-                        </Button>
-                      }
-                      title={`Archive ${fullName(client)}?`}
-                      description="Archiving hides the client from lists but keeps their appointment history intact. You can bring them back at any time."
-                      confirmLabel="Archive client"
-                      onConfirm={() => handleArchive(client)}
-                    />
+                    {canDelete ? (
+                      <ConfirmDialog
+                        trigger={
+                          <Button variant="danger" size="sm">
+                            Archive
+                          </Button>
+                        }
+                        title={`Archive ${fullName(client)}?`}
+                        description="Archiving hides the client from lists but keeps their appointment history intact. You can bring them back at any time."
+                        confirmLabel="Archive client"
+                        onConfirm={() => handleArchive(client)}
+                      />
+                    ) : null}
                   </div>
                 </li>
               ))}

@@ -205,6 +205,41 @@ export const staffInviteSchema = z
   })
   .strict();
 
+/**
+ * Studio settings (PATCH /api/account, owner-only). Timezone is validated
+ * against the runtime's IANA database rather than a hardcoded list, so a zone
+ * the server does not know is rejected instead of silently stored.
+ */
+function isSupportedTimeZone(value: string): boolean {
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: value });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export const settingsSchema = z
+  .object({
+    studioName: trimmed
+      .min(2, "Enter your studio name")
+      .max(120, "Studio name cannot exceed 120 characters"),
+    timezone: trimmed
+      .min(1, "Choose a timezone")
+      .max(64, "Timezone name is too long")
+      .refine(isSupportedTimeZone, {
+        message: "Choose a valid timezone, for example America/Boise",
+      }),
+    currency: z
+      .string()
+      .trim()
+      .min(3, "Use a 3-letter currency code like USD")
+      .max(3, "Use a 3-letter currency code like USD")
+      .regex(/^[A-Za-z]{3}$/, "Use a 3-letter currency code like USD")
+      .transform((value) => value.toUpperCase()),
+  })
+  .strict();
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type ServiceInput = z.infer<typeof serviceSchema>;
@@ -213,6 +248,7 @@ export type AppointmentInput = z.infer<typeof appointmentSchema>;
 export type AppointmentPatchInput = z.infer<typeof appointmentPatchSchema>;
 export type StatusUpdateInput = z.infer<typeof statusUpdateSchema>;
 export type StaffInviteInput = z.infer<typeof staffInviteSchema>;
+export type SettingsInput = z.infer<typeof settingsSchema>;
 
 /** Flatten a ZodError into `{ fieldName: message }` for the API error shape. */
 export function fieldErrors(error: z.ZodError): Record<string, string> {

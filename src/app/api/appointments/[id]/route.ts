@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { badRequest, conflict, jsonError } from "@/lib/api/errors";
-import { requireUser } from "@/lib/auth/session";
+import { requireOwner, requireUser } from "@/lib/auth/session";
 import { fromDateTimeLocalValue } from "@/lib/utils/datetime";
 import { appointmentPatchSchema, fieldErrors } from "@/lib/validations/schemas";
 import {
@@ -157,10 +157,13 @@ export async function PATCH(request: Request, { params }: RouteContext) {
  * Only an appointment that has not happened can be deleted. A completed or no-show
  * appointment is real history and is refused with `409` pointing at the status route,
  * which is the same soft-delete reasoning as clients and services (constitution §V).
+ *
+ * Owner-only: deleting removes a booking from the schedule entirely, so staff
+ * members cannot do it. Returns 403 for STAFF.
  */
 export async function DELETE(_request: Request, { params }: RouteContext) {
   try {
-    const user = await requireUser();
+    const user = await requireOwner();
     const { id } = await params;
     const appointment = await findOwnedAppointment(id, user.accountId);
 

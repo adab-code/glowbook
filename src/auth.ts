@@ -55,7 +55,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user?.id) {
         token.userId = user.id;
         token.accountId = user.accountId;
@@ -65,6 +65,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.currency = user.currency;
         token.firstName = user.firstName;
         token.lastName = user.lastName;
+      }
+      // The settings form calls `useSession().update()` after PATCH /api/account.
+      // That re-runs this callback with `trigger === "update"`, so the studio's
+      // display fields are re-read from the database and the re-issued cookie
+      // carries the new values — no sign-out required. Reads only the three
+      // display columns, never credentials.
+      if (trigger === "update" && typeof token.accountId === "string") {
+        const account = await db.account.findUnique({
+          where: { id: token.accountId },
+          select: { studioName: true, timezone: true, currency: true },
+        });
+        if (account) {
+          token.studioName = account.studioName;
+          token.timezone = account.timezone;
+          token.currency = account.currency;
+        }
       }
       return token;
     },

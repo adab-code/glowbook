@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { badRequest, jsonError, notFound } from "@/lib/api/errors";
-import { requireUser } from "@/lib/auth/session";
+import { requireOwner, requireUser } from "@/lib/auth/session";
 import { fieldErrors, serviceSchema } from "@/lib/validations/schemas";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -53,10 +53,13 @@ export async function PATCH(request: Request, { params }: RouteContext) {
 /**
  * DELETE /api/services/:id — archive instead of destroy when the service is part
  * of any appointment, so past bookings keep their history (constitution §V).
+ *
+ * Owner-only: deleting (or archiving) a service rewrites what future bookings
+ * can reference, so staff members cannot do it. Returns 403 for STAFF.
  */
 export async function DELETE(_request: Request, { params }: RouteContext) {
   try {
-    const user = await requireUser();
+    const user = await requireOwner();
     const { id } = await params;
     const service = await findOwnedService(id, user.accountId);
 
