@@ -57,7 +57,7 @@ The session reviewed the Week 06 scope against the carryover triaged in Week 05 
 
 ### What this week's pull request contains
 
-Branch `feat/w06-settings-access-tests` into `main`: https://github.com/adab-code/glowbook/pull/40. **Open for review — not merged.** Head commit `a6a3a53`.
+Branch `feat/w06-settings-access-tests` into `main`: https://github.com/adab-code/glowbook/pull/40. **Reviewed via the recorded self-review (§4), then squash-merged into `main`.** A duplicate pull request from `feat/w06-submission` — https://github.com/adab-code/glowbook/pull/41 — stays open with the identical scope as the persistent submission artifact.
 
 - **Access control** — `requireOwner()` on `DELETE /api/services/:id`, `DELETE /api/clients/:id`, `DELETE /api/appointments/:id` (403 for STAFF); `canDelete` prop hides the Archive/Delete controls for staff on all four managers (clients, services, day view, dashboard list); matrix documented in `docs/glowbook-spec.md` and `.github/copilot-instructions.md`.
 - **Editable settings** — `settingsSchema` (IANA-validated timezone, uppercased 3-letter currency), `PATCH /api/account` (owner-only, returns display fields only), `SettingsForm` with a timezone datalist, session refresh via `useSession().update()`; `/settings` stays read-only for STAFF.
@@ -89,7 +89,7 @@ Given my teammate's withdrawal, there was no second member to review this pull r
 - **Pull request reviewed:** https://github.com/adab-code/glowbook/pull/40
 - **Review submitted:** https://github.com/adab-code/glowbook/pull/40 (one `COMMENTED` review summary)
 
-The review verifies the four workstreams against the code: owner-only deletes with 403s, the settings PATCH + session-refresh path, the 30 unit tests and their deliberate DB-free boundary, and the disclosure-menu nav. Two non-blocking notes are recorded there: the Postgres exclusion constraint remains the durable overlap answer, and Playwright e2e is the open half of #33. CI is green; the PR stays open per team process.
+The review verifies the four workstreams against the code: owner-only deletes with 403s, the settings PATCH + session-refresh path, the 30 unit tests and their deliberate DB-free boundary, and the disclosure-menu nav. Two non-blocking notes are recorded there: the Postgres exclusion constraint remains the durable overlap answer, and Playwright e2e is the open half of #33. CI is green; PR #40 was squash-merged after the review and the duplicate PR #41 stays open per team process.
 
 ---
 
@@ -98,6 +98,6 @@ The review verifies the four workstreams against the code: owner-only deletes wi
 Stated plainly, because a report that lists only what works is not useful to a reviewer.
 
 - **Carryover for Week 07:** team invitations UI (#30), weekly/monthly calendar and reschedule UI (#32), Playwright end-to-end suite (second half of #33), race-safe overlap via `EXCLUDE USING gist` (#34). None are implemented in this deliverable.
-- **The PR is unmerged.** #36, #31, and #35 close on merge; the merge happens after the review, so the issues are Done on the board but still open on GitHub until then.
-- **`NEXT_PUBLIC_SITE_URL`** must be confirmed in the hosted Render environment so the Open Graph image resolves to the deploy rather than `localhost` (carried over from the W05 report; an environment action, not a code change).
+- **The merge closes #36, #31, and #35** via the `Closes` trailer on PR #40; the duplicate PR #41 carries no close trailers, so it stays open as the submission artifact without side effects.
+- **`NEXT_PUBLIC_SITE_URL` is set in the hosted Render environment** (confirmed by the owner in the Render dashboard); the Open Graph image resolves to the deploy.
 - **Render free-tier limits still apply** (30-day database expiry, ~1-minute cold starts), documented in `README.md`; the grader-facing note is unchanged.
