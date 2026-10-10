@@ -14,9 +14,12 @@ import type { Service } from "@/generated/prisma/client";
 export function ServiceManager({
   initialServices,
   currency,
+  canDelete,
 }: {
   initialServices: Service[];
   currency: string;
+  /** False for STAFF: deleting a service is owner-only (see DELETE /api/services/:id). */
+  canDelete: boolean;
 }) {
   const [services, setServices] = useState(initialServices);
   const [creating, setCreating] = useState(false);
@@ -140,17 +143,19 @@ export function ServiceManager({
                     >
                       Edit
                     </Button>
-                    <ConfirmDialog
-                      trigger={
-                        <Button variant="danger" size="sm">
-                          Delete
-                        </Button>
-                      }
-                      title={`Delete ${service.name}?`}
-                      description="If this service is already part of an appointment it will be archived instead, so past bookings keep their history."
-                      confirmLabel="Delete service"
-                      onConfirm={() => handleDelete(service)}
-                    />
+                    {canDelete ? (
+                      <ConfirmDialog
+                        trigger={
+                          <Button variant="danger" size="sm">
+                            Delete
+                          </Button>
+                        }
+                        title={`Delete ${service.name}?`}
+                        description="If this service is already part of an appointment it will be archived instead, so past bookings keep their history."
+                        confirmLabel="Delete service"
+                        onConfirm={() => handleDelete(service)}
+                      />
+                    ) : null}
                   </div>
                 </li>
               ))}

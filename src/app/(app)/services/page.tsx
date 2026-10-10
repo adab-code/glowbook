@@ -23,7 +23,11 @@ export default async function ServicesPage() {
         title="Services"
         description="Everything your studio offers, with the price and duration used to build appointments."
       />
-      <ServiceManager initialServices={services} currency={user.currency} />
+      <ServiceManager
+        initialServices={services}
+        currency={user.currency}
+        canDelete={user.role === "OWNER"}
+      />
     </>
   );
 }

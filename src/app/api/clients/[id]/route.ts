@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { badRequest, jsonError, notFound } from "@/lib/api/errors";
-import { requireUser } from "@/lib/auth/session";
+import { requireOwner, requireUser } from "@/lib/auth/session";
 import { clientPatchSchema, fieldErrors } from "@/lib/validations/schemas";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -46,10 +46,14 @@ export async function PATCH(request: Request, { params }: RouteContext) {
   }
 }
 
-/** DELETE /api/clients/:id — archive, never destroy: history must survive. */
+/** DELETE /api/clients/:id — archive, never destroy: history must survive.
+ *
+ * Owner-only: archiving removes the client from every list, so staff members
+ * cannot do it. Returns 403 for STAFF.
+ */
 export async function DELETE(_request: Request, { params }: RouteContext) {
   try {
-    const user = await requireUser();
+    const user = await requireOwner();
     const { id } = await params;
     const client = await findOwnedClient(id, user.accountId);
 

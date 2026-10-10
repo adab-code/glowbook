@@ -2,15 +2,7 @@ import Link from "next/link";
 import type { Session } from "next-auth";
 import { logoutAction } from "@/lib/auth/actions";
 import { Button } from "@/components/ui/button";
-
-const NAV_ITEMS = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/appointments", label: "Appointments" },
-  { href: "/clients", label: "Clients" },
-  { href: "/services", label: "Services" },
-  { href: "/team", label: "Team" },
-  { href: "/settings", label: "Settings" },
-] as const;
+import { MobileNav } from "@/components/layout/mobile-nav";
 
 export function AppHeader({ session }: { session: Session }) {
   const initials =
@@ -49,20 +41,7 @@ export function AppHeader({ session }: { session: Session }) {
         </div>
       </div>
 
-      <nav
-        aria-label="Main"
-        className="flex gap-1 overflow-x-auto border-t border-neutral-200 px-2 py-1 md:hidden"
-      >
-        {NAV_ITEMS.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className="whitespace-nowrap rounded-[var(--radius-control)] px-3 py-1.5 text-sm text-neutral-700 hover:bg-neutral-100"
-          >
-            {item.label}
-          </Link>
-        ))}
-      </nav>
+      <MobileNav />
     </header>
   );
 }

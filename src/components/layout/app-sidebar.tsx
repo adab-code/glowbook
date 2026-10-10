@@ -3,16 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Session } from "next-auth";
+import { NAV_ITEMS } from "@/components/layout/nav-items";
 import { cn } from "@/lib/utils/format";
-
-const NAV_ITEMS = [
-  { href: "/dashboard", label: "Dashboard", icon: "◈" },
-  { href: "/appointments", label: "Appointments", icon: "▤" },
-  { href: "/clients", label: "Clients", icon: "◍" },
-  { href: "/services", label: "Services", icon: "✦" },
-  { href: "/team", label: "Team", icon: "◉" },
-  { href: "/settings", label: "Settings", icon: "⚙" },
-] as const;
 
 export function AppSidebar({ session }: { session: Session }) {
   const pathname = usePathname();

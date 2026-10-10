@@ -20,10 +20,13 @@ export function AppointmentStatusActions({
   appointment,
   onChanged,
   onDeleted,
+  canDelete,
 }: {
   appointment: AppointmentWithRelations;
   onChanged: (next: AppointmentWithRelations) => void;
   onDeleted: (id: string) => void;
+  /** False for STAFF: deleting a booking is owner-only (see DELETE /api/appointments/:id). */
+  canDelete: boolean;
 }) {
   const [busy, setBusy] = useState<AppointmentStatus | "DELETE" | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -105,14 +108,16 @@ export function AppointmentStatusActions({
             onCancel={changeStatus}
             fieldError={fieldError}
           />{" "}
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={busy !== null}
-            onClick={remove}
-          >
-            {busy === "DELETE" ? "Removing…" : "Delete"}
-          </Button>
+          {canDelete ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={busy !== null}
+              onClick={remove}
+            >
+              {busy === "DELETE" ? "Removing…" : "Delete"}
+            </Button>
+          ) : null}
         </>
       ) : null}
 

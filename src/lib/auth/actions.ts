@@ -7,6 +7,7 @@ import { signIn, signOut } from "@/auth";
 import { db } from "@/lib/db";
 import {
   fieldErrors,
+  forgotPasswordSchema,
   loginSchema,
   registerSchema,
   resetPasswordSchema,
@@ -163,8 +164,11 @@ export async function requestResetAction(
   const email = String(formData.get("email") ?? "")
     .trim()
     .toLowerCase();
-  if (!email) {
-    return { status: "error", fields: { email: "Enter your email address." } };
+  // Validated with the shared schema (previously only emptiness was checked,
+  // so a malformed address reached the database lookup and still "succeeded").
+  const parsed = forgotPasswordSchema.safeParse({ email });
+  if (!parsed.success) {
+    return { status: "error", fields: fieldErrors(parsed.error) };
   }
 
   const user = await db.staffUser.findUnique({

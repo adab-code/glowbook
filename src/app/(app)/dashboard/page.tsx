@@ -116,6 +116,7 @@ export default async function DashboardPage() {
       <UpcomingAppointments
         initialAppointments={upcoming}
         timeZone={user.timezone}
+        canDelete={user.role === "OWNER"}
       />
 
       <p className="mt-6 text-xs text-neutral-500">
