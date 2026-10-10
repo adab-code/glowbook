@@ -4,13 +4,11 @@ Week 06 deliverables: the team meeting summary, project progress (repository, Pr
 
 **Verification note.** Everything asserted below was checked against the repository, against `git` and the GitHub CLI/API, or against a real CI run. No claim here is taken on trust. Playwright end-to-end coverage is deliberately absent: only the unit half of the test suite exists (see §5).
 
-> **Meeting placeholder.** The sprint decisions and responsibilities in §1 are the ones actually executed this week. Fill in the synchronous meeting date/time below after the team meeting takes place; nothing else in this report depends on it.
-
 ---
 
 ## 1. Team Meeting Summary
 
-**Synchronous meeting — [DATE/TIME TBD — solo sprint executed Saturday, October 10, 2026]**
+**Synchronous meeting — Friday, October 9, 2026 · 20:00 MDT (Microsoft Teams)**
 
 - **Team members present:** Aaron Daniel Alfaro Barra (lead)
 - **Team leader for Week 06:** Aaron Daniel Alfaro Barra
@@ -18,6 +16,17 @@ Week 06 deliverables: the team meeting summary, project progress (repository, Pr
 ### Team status — context for this report
 
 My teammate, Iván Chulde, withdrew from the course partway through the project and took no part in the Week 06 sprint. The Week 04 and Week 05 reports recorded the same situation; it still holds here. Two consequences carry into this report: the Week 06 work was completed solo, and the cross-review requirement cannot be satisfied by a second team member. As in Week 05, a self-review was submitted on the pull request instead (see §4).
+
+### Meeting summary
+
+The session reviewed the Week 06 scope against the carryover triaged in Week 05 (issues #30–#36) and walked through the working branch live:
+
+1. **Permissions demo.** The three destructive DELETE handlers return `403` for a STAFF session (verified with the seeded `staff@glowbook.dev` account), while GET/PATCH flows are unchanged; the Archive/Delete buttons are hidden for staff in all four managers.
+2. **Settings demo.** The owner edits studio name, timezone, and currency on `/settings`; the sidebar branding and dashboard day bounds update without a sign-out via the session-refresh path. The page stays read-only for STAFF.
+3. **Tests.** `npm run test` run live: 30/30 passing, including the DST day-bound pins and the W03/W04 regression locks; the new CI step runs the same suite on the pull request.
+4. **Mobile nav.** The disclosure menu opened/closed with the button, marked the current page, and showed no horizontal scrolling at 360px width.
+5. **Board review.** #31, #35, #36 accepted as Done (pending merge); #33 left In Progress (Playwright half outstanding); #30, #32, #34 confirmed as the Week 07 backlog; the `Week 06` milestone created and all seven issues assigned to it.
+6. **Blockers.** None on the code. The standing constraint — no second member for cross-review after the teammate's withdrawal — is handled with a recorded self-review, as in Week 05.
 
 ### Major decisions made
 
