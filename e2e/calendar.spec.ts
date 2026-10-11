@@ -41,27 +41,41 @@ test("owner moves a booking to another slot from the day view", async ({
   // the 16th and can never collide with it (sequential workers, shared studio).
   const day = "2030-06-16";
   await signIn(page, OWNER_EMAIL);
+
+  // Set up through the API: deterministic, and the range read below proves
+  // the day filter returns exactly this row.
+  const clients = (await (await page.request.get("/api/clients")).json()) as {
+    data: { id: string; firstName: string }[];
+  };
+  const sofia = clients.data.find((client) => client.firstName === "Sofía")!;
+  const services = (await (await page.request.get("/api/services")).json()) as {
+    data: { id: string; name: string }[];
+  };
+  const classic = services.data.find(
+    (service) => service.name === "Classic eyelash extensions",
+  )!;
+  const created = await page.request.post("/api/appointments", {
+    data: {
+      clientId: sofia.id,
+      serviceIds: [classic.id],
+      startsAt: `${day}T10:00`,
+      staffUserId: "",
+    },
+  });
+  expect(created.status()).toBe(201);
+
+  const listed = (await (
+    await page.request.get(
+      `/api/appointments?from=${day}T00:00&to=2030-06-17T00:00`,
+    )
+  ).json()) as { data: { id: string }[] };
+  expect(listed.data).toHaveLength(1);
+  const appointmentId = listed.data[0].id;
+
   await page.goto(`/appointments?view=day&date=${day}`);
-
-  // Two "Book appointment" buttons coexist (trigger + empty-state action):
-  // the opener takes the first, the submit stays form-scoped.
-  await page.getByRole("button", { name: "Book appointment" }).first().click();
-  await page.getByLabel("Client").selectOption({ label: "Sofía Ramírez" });
-  await page
-    .getByRole("checkbox", { name: /Classic eyelash extensions/ })
-    .check();
-  await page.getByLabel("Starts at").fill(`${day}T10:00`);
-  await page
-    .locator("form")
-    .getByRole("button", { name: "Book appointment" })
-    .click();
-  // The form only closes on success (header logout form remains).
-  await expect(page.locator("form")).toHaveCount(1, { timeout: 30000 });
-
-  await page
-    .locator("li", { hasText: "Sofía Ramírez" })
-    .getByRole("button", { name: "Move" })
-    .click();
+  const row = page.locator("li", { hasText: "Sofía Ramírez" });
+  await expect(row).toBeVisible({ timeout: 30000 });
+  await row.getByRole("button", { name: "Move" }).click();
   await page.getByLabel("New date and time").fill(`${day}T12:00`);
   await page.getByRole("button", { name: "Move appointment" }).click();
   // The dialog only closes on success; an overlap would keep it open instead.
@@ -71,11 +85,8 @@ test("owner moves a booking to another slot from the day view", async ({
   await expect(page.getByText("12:00 PM").first()).toBeVisible();
 
   // Leave the schedule as it was found.
-  const list = await page.request.get(
-    `/api/appointments?from=${day}T00:00&to=2030-06-17T00:00`,
+  const removed = await page.request.delete(
+    `/api/appointments/${appointmentId}`,
   );
-  const { data } = (await list.json()) as { data: { id: string }[] };
-  for (const appointment of data) {
-    await page.request.delete(`/api/appointments/${appointment.id}`);
-  }
+  expect(removed.ok()).toBe(true);
 });
