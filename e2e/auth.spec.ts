@@ -18,6 +18,15 @@ test("signup creates a studio and lands on the dashboard", async ({ page }) => {
   // Diagnostic: prove what the field holds before submit (see CI signup flake).
   await expect(page.getByLabel("Password")).toHaveValue("password123");
   await page.getByRole("button", { name: "Create studio" }).click();
+  // TEMPORARY diagnostic: dump the visible form state so the CI log shows
+  // whether the action returned a field error, a banner, or nothing at all.
+  await page.waitForTimeout(4000);
+  const formState = await page.locator("form").first().textContent();
+  console.log(
+    "[e2e-debug] signup state:",
+    page.url(),
+    JSON.stringify(formState?.slice(0, 400)),
+  );
   await expectOnDashboard(page);
   await signOut(page);
 });
