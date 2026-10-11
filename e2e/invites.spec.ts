@@ -36,7 +36,8 @@ test("owner invites, the invitee joins, then a second invite is revoked", async 
   await page.goto("/team");
   await page.getByLabel("Email").fill(doomed);
   await page.getByRole("button", { name: "Send invite" }).click();
-  await expect(page.getByText(doomed)).toBeVisible();
+  // Scoped to the list row: the confirmation banner also names the address.
+  await expect(page.locator("li", { hasText: doomed })).toBeVisible();
   await page
     .locator("li", { hasText: doomed })
     .getByRole("button", { name: "Revoke" })
