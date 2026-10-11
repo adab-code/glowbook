@@ -161,6 +161,56 @@ export function zonedWeekBounds(
   );
 }
 
+/**
+ * Midnight of the first day of the studio's calendar month containing `date`.
+ * `endOfMonth` returns the exclusive start of the next month. Month 13 rolls
+ * into January of the next year via the Date.UTC overflow, same as the day
+ * helpers above.
+ */
+export function zonedMonthBounds(
+  date: Date,
+  timeZone: string,
+  endOfMonth = false,
+): Date {
+  const wall = wallClockOf(date, timeZone);
+  const shifted = new Date(
+    Date.UTC(wall.year, wall.month - 1 + (endOfMonth ? 1 : 0), 1),
+  );
+  return instantFromWallClock(
+    {
+      year: shifted.getUTCFullYear(),
+      month: shifted.getUTCMonth() + 1,
+      day: shifted.getUTCDate(),
+      hour: 0,
+      minute: 0,
+      second: 0,
+    },
+    timeZone,
+  );
+}
+
+/**
+ * Midnight `days` calendar days after `date`'s wall-clock day, in `timeZone`.
+ * DST-safe: a day is added on the calendar, not as 24h of absolute time.
+ */
+export function addWallDays(date: Date, timeZone: string, days: number): Date {
+  const wall = wallClockOf(date, timeZone);
+  const shifted = new Date(
+    Date.UTC(wall.year, wall.month - 1, wall.day + days),
+  );
+  return instantFromWallClock(
+    {
+      year: shifted.getUTCFullYear(),
+      month: shifted.getUTCMonth() + 1,
+      day: shifted.getUTCDate(),
+      hour: 0,
+      minute: 0,
+      second: 0,
+    },
+    timeZone,
+  );
+}
+
 /** "2026-09-30T14:30" — the value shape `<input type="datetime-local">` expects. */
 export function toDateTimeLocalValue(date: Date, timeZone: string): string {
   const wall = wallClockOf(date, timeZone);

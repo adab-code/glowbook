@@ -14,7 +14,9 @@ import { Spinner } from "@/components/shared/spinner";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { AppointmentForm } from "@/components/features/appointments/appointment-form";
 import { AppointmentStatusActions } from "@/components/features/appointments/appointment-status-actions";
+import { RescheduleForm } from "@/components/features/appointments/reschedule-form";
 import { apiFetch, toMessage } from "@/lib/utils/api-client";
+import { toDateTimeLocalValue } from "@/lib/utils/datetime";
 import { formatMoney, formatTime, fullName } from "@/lib/utils/format";
 import type { AppointmentWithRelations } from "@/lib/appointments/types";
 
@@ -28,8 +30,7 @@ export function AppointmentManager({
   staff,
   currency,
   timeZone,
-  dayLabel,
-  nowLabel,
+  heading,
   dayQuery,
   canDelete,
 }: {
@@ -39,15 +40,16 @@ export function AppointmentManager({
   staff: Option[];
   currency: string;
   timeZone: string;
-  dayLabel: string;
-  nowLabel: string;
-  /** `from`/`to` for this day, as `YYYY-MM-DDTHH:mm` in the studio's wall clock. */
+  /** "Today · Mon, Oct 12" for today, the bare day label for other dates. */
+  heading: string;
+  /** `from`/`to` for the viewed day, as `YYYY-MM-DDTHH:mm` in the studio's wall clock. */
   dayQuery: { from: string; to: string };
   /** False for STAFF: deleting a booking is owner-only (see DELETE /api/appointments/:id). */
   canDelete: boolean;
 }) {
   const [appointments, setAppointments] = useState(initialAppointments);
   const [booking, setBooking] = useState(false);
+  const [moving, setMoving] = useState<AppointmentWithRelations | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [reloading, startReload] = useTransition();
 
@@ -100,12 +102,22 @@ export function AppointmentManager({
         </div>
       )}
 
+      {moving ? (
+        <RescheduleForm
+          appointmentId={moving.id}
+          currentStartsAt={toDateTimeLocalValue(moving.startsAt, timeZone)}
+          onDone={() => {
+            setMoving(null);
+            reload("Appointment moved.");
+          }}
+          onCancel={() => setMoving(null)}
+        />
+      ) : null}
+
       <Card>
         <CardHeader>
-          <CardTitle>Today · {dayLabel}</CardTitle>
-          <CardDescription>
-            In chronological order, {timeZone}. As of {nowLabel}.
-          </CardDescription>
+          <CardTitle>{heading}</CardTitle>
+          <CardDescription>In chronological order, {timeZone}.</CardDescription>
         </CardHeader>
         <CardContent className="p-0 sm:p-0">
           {appointments.length === 0 ? (
@@ -160,25 +172,39 @@ export function AppointmentManager({
                     ) : null}
                   </div>
 
-                  <AppointmentStatusActions
-                    appointment={appointment}
-                    canDelete={canDelete}
-                    onChanged={(next) =>
-                      setAppointments((current) =>
-                        current.map((item) =>
-                          item.id === next.id ? next : item,
-                        ),
-                      )
-                    }
-                    onDeleted={(id) => {
-                      setAppointments((current) =>
-                        current.filter((item) => item.id !== id),
-                      );
-                      setMessage(
-                        "The appointment was removed from the schedule.",
-                      );
-                    }}
-                  />
+                  <div className="flex shrink-0 items-center gap-2">
+                    {appointment.status === "SCHEDULED" ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setBooking(false);
+                          setMoving(appointment);
+                        }}
+                      >
+                        Move
+                      </Button>
+                    ) : null}
+                    <AppointmentStatusActions
+                      appointment={appointment}
+                      canDelete={canDelete}
+                      onChanged={(next) =>
+                        setAppointments((current) =>
+                          current.map((item) =>
+                            item.id === next.id ? next : item,
+                          ),
+                        )
+                      }
+                      onDeleted={(id) => {
+                        setAppointments((current) =>
+                          current.filter((item) => item.id !== id),
+                        );
+                        setMessage(
+                          "The appointment was removed from the schedule.",
+                        );
+                      }}
+                    />
+                  </div>
                 </li>
               ))}
             </ul>
@@ -191,13 +217,6 @@ export function AppointmentManager({
           <Spinner /> Refreshing the day…
         </p>
       ) : null}
-
-      <p className="text-xs text-neutral-600">
-        Today only. Rescheduling an existing booking and the weekly calendar
-        grid are tracked in the next milestone — this view covers booking,
-        cancelling and closing appointments, which is what the daily dashboard
-        needs.
-      </p>
     </div>
   );
 }

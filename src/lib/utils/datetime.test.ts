@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  addWallDays,
   fromDateTimeLocalValue,
   instantFromWallClock,
   toDateTimeLocalValue,
   zonedDayBounds,
+  zonedMonthBounds,
   zonedWeekBounds,
 } from "@/lib/utils/datetime";
 
@@ -97,5 +99,38 @@ describe("instantFromWallClock", () => {
       "America/Boise",
     );
     expect(instant.toISOString()).toBe("2026-09-30T15:45:00.000Z");
+  });
+});
+
+describe("zonedMonthBounds", () => {
+  it("returns the first of the month and the exclusive next month", () => {
+    const mid = new Date("2026-10-15T12:00:00Z");
+    expect(zonedMonthBounds(mid, "America/Boise").toISOString()).toBe(
+      "2026-10-01T06:00:00.000Z",
+    );
+    expect(zonedMonthBounds(mid, "America/Boise", true).toISOString()).toBe(
+      "2026-11-01T06:00:00.000Z",
+    );
+  });
+
+  it("rolls December into January of the next year", () => {
+    const mid = new Date("2026-12-15T12:00:00Z");
+    expect(zonedMonthBounds(mid, "America/Boise", true).toISOString()).toBe(
+      "2027-01-01T07:00:00.000Z",
+    );
+  });
+});
+
+describe("addWallDays", () => {
+  it("adds calendar days, not 24h blocks, across spring-forward", () => {
+    // Mar 8 2026 loses an hour in Boise; +1 day must still be Mar 9 midnight.
+    const sunday = new Date("2026-03-08T12:00:00Z");
+    const monday = addWallDays(sunday, "America/Boise", 1);
+    expect(toDateTimeLocalValue(monday, "America/Boise")).toBe(
+      "2026-03-09T00:00",
+    );
+    expect(addWallDays(sunday, "America/Boise", 0).getTime()).toBe(
+      zonedDayBounds(sunday, "America/Boise").getTime(),
+    );
   });
 });
