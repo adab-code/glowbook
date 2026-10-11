@@ -65,11 +65,21 @@ export async function GET(request: Request) {
     // the range, which is what a day view wants. Long appointments that started
     // earlier and run into the range are intentionally left out — showing them would
     // duplicate them in every day cell they span.
+    // NOTE: `gte` and `lt` must merge into ONE `startsAt` object. Two sibling
+    // spreads with the same key (`{...{startsAt:{gte}}, ...{startsAt:{lt}}}`)
+    // silently drop the first bound — the day view reloaded unfiltered rows
+    // after every booking until the Playwright move spec caught it.
     const appointments = await db.appointment.findMany({
       where: {
         accountId: user.accountId,
-        ...(startsAt ? { startsAt: { gte: startsAt } } : {}),
-        ...(endsAt ? { startsAt: { lt: endsAt } } : {}),
+        ...(startsAt || endsAt
+          ? {
+              startsAt: {
+                ...(startsAt ? { gte: startsAt } : {}),
+                ...(endsAt ? { lt: endsAt } : {}),
+              },
+            }
+          : {}),
         ...(status ? { status } : {}),
       },
       orderBy: { startsAt: "asc" },

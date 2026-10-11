@@ -62,11 +62,6 @@ test("owner moves a booking to another slot from the day view", async ({
       staffUserId: "",
     },
   });
-  // TEMPORARY diagnostic: the CI run 409s here on a slot nothing should
-  // occupy — print the clash message to identify the conflicting row.
-  if (created.status() !== 201) {
-    console.log("[e2e-debug] booking clash:", await created.text());
-  }
   expect(created.status()).toBe(201);
 
   const listed = (await (
