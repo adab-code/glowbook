@@ -293,6 +293,11 @@ Sign-up, sign-out, and password reset are React Server Actions in `src/lib/auth/
 - Single-day schedule view only; a month view and drag-to-reschedule are Phase 2.
 - **Unit test suite** — Vitest, 30 tests (`npm run test`, also a CI step): day/week datetime bounds incl. DST transitions, Zod schema regressions from earlier sprints, token properties, money/time formatting. Database-backed helpers are excluded from the suite by design (they throw at import without `DATABASE_URL`); Playwright end-to-end is the planned second half.
 
+## Accessibility & Performance
+
+- **Text contrast:** every text/background pair meets WCAG AA (body, links, buttons, and headings meet AAA) — verified by computed ratios and by Lighthouse with zero `color-contrast` violations on all audited routes.
+- **Lighthouse (mobile):** `/login` 98/100/100/100, `/dashboard` 84/100/100/60 — the dashboard SEO score is the intentional `noindex` on private routes. Full method, scores, and strongest/weakest analysis: [`docs/lighthouse-w06.md`](docs/lighthouse-w06.md).
+
 ---
 
 ## License
