@@ -5,6 +5,7 @@ import {
   clientSchema,
   inviteAcceptSchema,
   loginSchema,
+  registerSchema,
   serviceSchema,
   settingsSchema,
   staffInviteSchema,
@@ -220,5 +221,46 @@ describe("inviteAcceptSchema", () => {
     expect(
       inviteAcceptSchema.safeParse({ ...validAccept, token: " " }).success,
     ).toBe(false);
+  });
+});
+
+describe("form-action schemas tolerate transport fields", () => {
+  // Regression (W07, caught by the Playwright signup spec): browser form
+  // submissions carry transport fields around the inputs. Strict mode rejected
+  // them, so sign-up (and invite accept, and password reset) silently failed
+  // while sign-in — whose schema was already lenient — kept working.
+  const transport = { $ACTION_KEY: "transport-noise", extra: "noise" };
+
+  it("registerSchema strips transport fields instead of rejecting them", () => {
+    const parsed = registerSchema.safeParse({
+      studioName: "Glow Studio",
+      firstName: "Ana",
+      lastName: "Ruiz",
+      email: "ana@studio.com",
+      password: "password123",
+      ...transport,
+    });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data).toEqual({
+        studioName: "Glow Studio",
+        firstName: "Ana",
+        lastName: "Ruiz",
+        email: "ana@studio.com",
+        password: "password123",
+      });
+    }
+  });
+
+  it("inviteAcceptSchema strips transport fields instead of rejecting them", () => {
+    const parsed = inviteAcceptSchema.safeParse({
+      token: "raw-token",
+      firstName: "Cierra",
+      lastName: "Vega",
+      password: "password123",
+      confirm: "password123",
+      ...transport,
+    });
+    expect(parsed.success).toBe(true);
   });
 });

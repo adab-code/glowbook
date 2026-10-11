@@ -55,3 +55,64 @@ jobs:
           DATABASE_URL: postgresql://ci:ci@localhost:5432/ci_placeholder?schema=public
           AUTH_SECRET: ci-placeholder-secret-not-used-at-build
           AUTH_TRUST_HOST: "true"
+
+  e2e:
+    name: Playwright e2e
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: e2e
+          POSTGRES_PASSWORD: e2e
+          POSTGRES_DB: glowbook_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U e2e"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://e2e:e2e@localhost:5432/glowbook_e2e
+      AUTH_SECRET: e2e-ci-secret-not-for-production
+      AUTH_TRUST_HOST: "true"
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+      SEED_PASSWORD: E2eTest!2026
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      # Real database, migrated and seeded: the specs sign in as the seeded
+      # owner/staff and exercise the full client → route → database loop.
+      - name: Migrate and seed
+        run: npx prisma migrate deploy && npx prisma db seed
+
+      - name: Build
+        run: npm run build
+
+      - name: Run Playwright
+        run: npx playwright test
+
+      - name: Upload failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-failures
+          path: test-results/
+          retention-days: 7

@@ -25,6 +25,18 @@ describe("studio-zone formatting", () => {
   it("renders day labels in the studio zone", () => {
     expect(formatDayLabel(instant, "America/Boise")).toBe("Wed, Sep 30");
   });
+
+  it("accepts ISO strings as well as Dates (route-handler JSON)", () => {
+    // Client-side reloads through apiFetch hand formatters date strings, not
+    // Date objects (RSC preserves Dates; JSON does not). Before the coercion
+    // guard this crashed the appointments list with "Invalid time value".
+    expect(formatTime("2026-09-30T15:45:00.000Z", "America/Boise")).toBe(
+      "9:45 AM",
+    );
+    expect(formatDayLabel("2026-09-30T15:45:00.000Z", "America/Boise")).toBe(
+      "Wed, Sep 30",
+    );
+  });
 });
 
 describe("names and ids", () => {
