@@ -3,9 +3,11 @@ import {
   appointmentSchema,
   clientPatchSchema,
   clientSchema,
+  inviteAcceptSchema,
   loginSchema,
   serviceSchema,
   settingsSchema,
+  staffInviteSchema,
   statusUpdateSchema,
 } from "@/lib/validations/schemas";
 
@@ -175,5 +177,48 @@ describe("loginSchema", () => {
         password: "password123",
       });
     }
+  });
+});
+
+describe("staffInviteSchema", () => {
+  it("defaults the role to STAFF", () => {
+    const parsed = staffInviteSchema.safeParse({
+      email: "teammate@studio.com",
+    });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) expect(parsed.data.role).toBe("STAFF");
+  });
+
+  it("rejects malformed emails and unknown roles", () => {
+    expect(staffInviteSchema.safeParse({ email: "not-an-email" }).success).toBe(
+      false,
+    );
+    expect(
+      staffInviteSchema.safeParse({ email: "a@b.co", role: "ADMIN" }).success,
+    ).toBe(false);
+  });
+});
+
+describe("inviteAcceptSchema", () => {
+  const validAccept = {
+    token: "raw-invite-token",
+    firstName: "Cierra",
+    lastName: "Vega",
+    password: "password123",
+    confirm: "password123",
+  };
+
+  it("accepts a matching password pair", () => {
+    expect(inviteAcceptSchema.safeParse(validAccept).success).toBe(true);
+  });
+
+  it("rejects mismatched passwords and a missing token", () => {
+    expect(
+      inviteAcceptSchema.safeParse({ ...validAccept, confirm: "other1234" })
+        .success,
+    ).toBe(false);
+    expect(
+      inviteAcceptSchema.safeParse({ ...validAccept, token: " " }).success,
+    ).toBe(false);
   });
 });

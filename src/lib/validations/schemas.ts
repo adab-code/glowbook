@@ -206,6 +206,25 @@ export const staffInviteSchema = z
   .strict();
 
 /**
+ * Accepting a staff invitation (POSTed by the invite-accept form as FormData).
+ * The email and role come from the stored invitation row, never from the form,
+ * so an acceptor cannot promote themselves by editing the request.
+ */
+export const inviteAcceptSchema = z
+  .object({
+    token: trimmed.min(1, "Missing invitation token"),
+    firstName: trimmed.min(1, "Enter your first name").max(80),
+    lastName: trimmed.min(1, "Enter your last name").max(80),
+    password: passwordSchema,
+    confirm: passwordSchema,
+  })
+  .strict()
+  .refine((value) => value.password === value.confirm, {
+    message: "Both passwords must match",
+    path: ["confirm"],
+  });
+
+/**
  * Studio settings (PATCH /api/account, owner-only). Timezone is validated
  * against the runtime's IANA database rather than a hardcoded list, so a zone
  * the server does not know is rejected instead of silently stored.
@@ -248,6 +267,7 @@ export type AppointmentInput = z.infer<typeof appointmentSchema>;
 export type AppointmentPatchInput = z.infer<typeof appointmentPatchSchema>;
 export type StatusUpdateInput = z.infer<typeof statusUpdateSchema>;
 export type StaffInviteInput = z.infer<typeof staffInviteSchema>;
+export type InviteAcceptInput = z.infer<typeof inviteAcceptSchema>;
 export type SettingsInput = z.infer<typeof settingsSchema>;
 
 /** Flatten a ZodError into `{ fieldName: message }` for the API error shape. */
