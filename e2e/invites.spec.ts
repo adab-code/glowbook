@@ -23,7 +23,8 @@ test("owner invites, the invitee joins, then a second invite is revoked", async 
   await expect(page.getByText(email)).toBeVisible();
   await page.getByLabel("First name").fill("E2E");
   await page.getByLabel("Last name").fill("Invitee");
-  await page.getByLabel("Password").fill("password123");
+  // Exact: "Confirm password" contains "Password" as a substring.
+  await page.getByLabel("Password", { exact: true }).fill("password123");
   await page.getByLabel("Confirm password").fill("password123");
   await page.getByRole("button", { name: "Join the studio" }).click();
   await page.waitForURL("**/dashboard");

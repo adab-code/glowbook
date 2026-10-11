@@ -18,14 +18,27 @@ test("signup creates a studio and lands on the dashboard", async ({ page }) => {
   // Diagnostic: prove what the field holds before submit (see CI signup flake).
   await expect(page.getByLabel("Password")).toHaveValue("password123");
   await page.getByRole("button", { name: "Create studio" }).click();
-  // TEMPORARY diagnostic: dump the visible form state so the CI log shows
-  // whether the action returned a field error, a banner, or nothing at all.
+  // TEMPORARY diagnostic: input VALUES (textContent cannot see them) plus any
+  // visible error, so the CI log shows whether the action errored or the page
+  // reloaded. Lengths only — never the secrets themselves.
   await page.waitForTimeout(4000);
-  const formState = await page.locator("form").first().textContent();
+  const lengths: Record<string, number | string> = {};
+  for (const label of ["Studio name", "Email", "Password"]) {
+    try {
+      lengths[label] = (await page.getByLabel(label).inputValue()).length;
+    } catch {
+      lengths[label] = "<gone>";
+    }
+  }
+  const alerts = await page
+    .locator('[role="alert"]')
+    .allTextContents()
+    .catch(() => [] as string[]);
   console.log(
     "[e2e-debug] signup state:",
     page.url(),
-    JSON.stringify(formState?.slice(0, 400)),
+    JSON.stringify(lengths),
+    JSON.stringify(alerts.map((text) => text.slice(0, 200))),
   );
   await expectOnDashboard(page);
   await signOut(page);

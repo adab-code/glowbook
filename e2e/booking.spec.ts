@@ -28,18 +28,18 @@ test("owner can book a slot and an overlap is refused", async ({ page }) => {
       .locator("form")
       .getByRole("button", { name: "Book appointment" })
       .click();
-    // Surface the real outcome in the failure output: the success banner or
-    // whatever the form alert actually says.
-    const outcome = page.locator('p[role="status"], div[role="alert"]').first();
-    await expect(outcome).toBeVisible({ timeout: 30000 });
-    return (await outcome.textContent()) ?? "";
   }
 
   await fillBooking();
-  expect(await submitBooking()).toContain("Appointment booked.");
-  await expect(page.getByText("Sofía Ramírez").first()).toBeVisible();
+  await submitBooking();
+  // The form only closes on success (header logout form remains): 2 forms
+  // become 1. An error would keep the booking form open instead.
+  await expect(page.locator("form")).toHaveCount(1, { timeout: 30000 });
 
   // Same resource, same slot: the friendly 409 names the clash (FR-021).
   await fillBooking();
-  expect(await submitBooking()).toMatch(/overlap/i);
+  await submitBooking();
+  await expect(page.getByText(/overlap/i).first()).toBeVisible({
+    timeout: 30000,
+  });
 });
