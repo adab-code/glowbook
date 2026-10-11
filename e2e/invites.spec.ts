@@ -14,7 +14,8 @@ test("owner invites, the invitee joins, then a second invite is revoked", async 
   expect(rawLink).toContain("/invite?token=");
   if (!rawLink) throw new Error("invite link did not render");
   const acceptUrl = rawLink.trim();
-  await expect(page.getByText(email)).toBeVisible();
+  // Scoped to the list row: the confirmation banner also names the address.
+  await expect(page.locator("li", { hasText: email })).toBeVisible();
 
   // Follow the link in a signed-out tab: the seeded owner session is gone.
   await page.context().clearCookies();

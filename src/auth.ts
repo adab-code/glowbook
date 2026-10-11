@@ -18,6 +18,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(raw) {
+        // TEMPORARY e2e diagnostic (removed once the signup-signin path is fixed).
+        console.warn("[auth-debug] authorize called");
         const parsed = loginSchema.safeParse(raw);
         if (!parsed.success) {
           // TEMPORARY e2e diagnostic (removed once the signup-signin path is fixed).
@@ -47,6 +49,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!user?.passwordHash || !user.isActive || !user.account) return null;
 
         const valid = await compare(parsed.data.password, user.passwordHash);
+        // TEMPORARY e2e diagnostic (removed once the signup-signin path is fixed).
+        if (!valid)
+          console.warn("[auth-debug] authorize: compare false", {
+            pwLen: parsed.data.password.length,
+            hashLen: user.passwordHash.length,
+            hashPrefix: user.passwordHash.slice(0, 7),
+          });
         if (!valid) return null;
 
         await db.staffUser.update({
