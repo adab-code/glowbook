@@ -12,6 +12,8 @@ import {
   appointmentInclude,
   assertNoOverlap,
   findBookableClient,
+  isOverlapViolation,
+  overlapTaken,
   resolveBookingServices,
   resolveStaffUser,
   summariseBooking,
@@ -140,20 +142,29 @@ export async function POST(request: Request) {
       { timeZone: user.timezone },
     );
 
-    const appointment = await db.appointment.create({
-      data: {
-        accountId: user.accountId,
-        clientId: client.id,
-        staffUserId: resolvedStaffUserId,
-        startsAt,
-        endsAt,
-        priceCentsTotal,
-        services: {
-          create: services.map((service) => ({ serviceId: service.id })),
+    // The INSERT is covered by the `appointment_no_overlap` exclusion
+    // constraint: a request that raced past the pre-check above fails here
+    // instead of silently double-booking.
+    let appointment;
+    try {
+      appointment = await db.appointment.create({
+        data: {
+          accountId: user.accountId,
+          clientId: client.id,
+          staffUserId: resolvedStaffUserId,
+          startsAt,
+          endsAt,
+          priceCentsTotal,
+          services: {
+            create: services.map((service) => ({ serviceId: service.id })),
+          },
         },
-      },
-      include: appointmentInclude,
-    });
+        include: appointmentInclude,
+      });
+    } catch (error) {
+      if (isOverlapViolation(error)) overlapTaken();
+      throw error;
+    }
 
     return NextResponse.json({ data: appointment }, { status: 201 });
   } catch (error) {
