@@ -173,7 +173,7 @@ export function ClientManager({
                         {client.notes}
                       </p>
                     ) : null}
-                    <p className="text-xs text-neutral-500">
+                    <p className="text-xs text-neutral-600">
                       {client._count.appointments} appointment
                       {client._count.appointments === 1 ? "" : "s"}
                     </p>

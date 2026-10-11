@@ -157,7 +157,7 @@ export function AppointmentForm({
                           <span className="block text-neutral-800">
                             {service.label}
                           </span>
-                          <span className="block text-xs text-neutral-500">
+                          <span className="block text-xs text-neutral-600">
                             {service.durationMinutes} min ·{" "}
                             {formatMoney(service.priceCents, currency)}
                           </span>

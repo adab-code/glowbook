@@ -6,7 +6,7 @@ export default function AppLoading() {
     <div
       role="status"
       aria-label="Loading page"
-      className="flex min-h-[50vh] items-center justify-center text-neutral-500"
+      className="flex min-h-[50vh] items-center justify-center text-neutral-600"
     >
       <Spinner className="size-6" />
       <span className="ml-3 text-sm">Loading…</span>

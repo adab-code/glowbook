@@ -19,7 +19,7 @@ export function EmptyState({
     <div className="flex flex-col items-center gap-3 py-16 text-center">
       <div
         aria-hidden
-        className="flex size-12 items-center justify-center rounded-full bg-brand-50 text-xl text-brand-500"
+        className="flex size-12 items-center justify-center rounded-full bg-brand-50 text-xl text-brand-600"
       >
         {icon}
       </div>

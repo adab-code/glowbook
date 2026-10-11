@@ -13,6 +13,8 @@ Booking and client management for independent beauty professionals and small stu
 | Aaron Daniel Alfaro Barra | [@adab-code](https://github.com/adab-code) | Team lead (Week 02), data model, authentication, API route handlers |
 | Iván Chulde | [@ivanchulde](https://github.com/ivanchulde) | Team lead (Week 03), design system, component library, dashboard & calendar UI |
 
+> **Solo completion note.** Iván withdrew from the course during the project and took no part from Week 04 on. All remaining work (Weeks 04–06: RBAC enforcement, editable settings, unit tests, mobile nav, and every report) was completed solo by Aaron — see `docs/w04-reports.md` §1. Both names stay listed above because both contributed to the shipped product.
+
 ---
 
 ## Features
@@ -109,12 +111,23 @@ Seeded by `prisma/seed.ts` (`npx prisma db seed`):
 
 Never use these on a real database — the seed resets the `aurea-lashes` studio and refuses to run in production unless `ALLOW_PRODUCTION_SEED=1` + `SEED_ALLOWED_STUDIO=aurea-lashes`.
 
+### How to test (for the grader)
+
+Auth provider: **Auth.js v5** (Credentials provider; session in a signed cookie — no external provider needed).
+
+1. **Sign in as OWNER** — `owner@glowbook.dev` / `GlowBook!2026` (or the `SEED_PASSWORD` value if overridden). Land on `/dashboard` with today's and upcoming appointments — real rows from the seeded studio.
+2. **Exercise two-model CRUD** — `/services`: create/edit/archive a service (archiving keeps past bookings). `/clients`: create/edit/archive a client with notes. `/appointments`: book a slot (overlap returns `409`), edit, change status, cancel.
+3. **Verify role enforcement** — open `/settings` as OWNER, change the studio name/timezone/currency, save: the sidebar branding updates with no sign-out. Then sign in as STAFF (`staff@glowbook.dev`, same password): `/settings` is read-only, Archive/Delete buttons are hidden, and calling `DELETE /api/services/:id` directly returns `403`.
+4. **Sign-up flow** — `/signup` creates a brand-new studio + OWNER account, proving multi-tenancy (each studio only sees its own data).
+5. **Sign-out** — the header menu signs out and the auth gate (`proxy.ts`) bounces logged-out visitors back to `/login`.
+
 ### Other scripts
 
 ```bash
 npm run build        # production build
 npm run start        # serve the production build
 npm run lint         # ESLint
+npm run test         # Vitest unit suite (30 tests)
 ```
 
 ---
@@ -164,7 +177,7 @@ If this project ever needs to be genuinely live, the minimum fix is a paid Rende
 
 ## Project Structure
 
-The structure below reflects the repository as it stands after the Week 05 milestone (auth + metadata + services/clients/appointments CRUD).
+The structure below reflects the repository as it stands after the Week 06 milestone (auth + metadata + services/clients/appointments CRUD + OWNER/STAFF role enforcement + editable settings + Vitest unit suite).
 
 ```
 src/
@@ -174,20 +187,21 @@ src/
     layout.tsx         → root layout, next/font (Geist, Geist_Mono, Fraunces)
     globals.css        → Tailwind v4 design tokens in an @theme block
     (auth)/            → login, signup, forgot-password, reset-password
-    (app)/             → authenticated shell: dashboard, services, clients, appointments*, team*, settings*
+    (app)/            → authenticated shell: dashboard, services, clients, appointments*, team*, settings
     api/               → route handlers (client → server → DB)
   components/
     ui/                → design-system primitives: button, card, input, label
     shared/            → form-field, submit-button, confirm-dialog, status-badge, empty-state, page-header, spinner
     layout/            → auth-card, app-sidebar, app-header
-    features/          → auth/, services/, clients/, appointments/  *(staff/ not built yet)*
+    features/          → auth/, services/, clients/, appointments/, settings/  *(staff/ not built yet)*
   lib/
     db.ts              → Prisma 7 client singleton with the @prisma/adapter-pg driver adapter
     auth/              → session.ts (requireUser / requireOwner), actions.ts (server actions)
     api/errors.ts      → ApiError + the shared JSON error envelope
     validations/       → Zod 4 schemas shared by forms and route handlers
-    utils/             → format, tokens, api-client
+    utils/             → format, tokens, api-client, datetime
   types/               → next-auth module augmentation
+vitest.config.ts     → Vitest unit suite (30 tests: datetime, schemas, tokens, format)
 prisma/
   schema.prisma, migrations/, seed.ts
 docs/
@@ -200,7 +214,7 @@ specs/001-glowbook-booking/  → original Spec-Kit working spec (superseded by d
 .github/copilot-instructions.md → AI assistant rules for the whole team
 ```
 
-\* `team` is a stub and `settings` is read-only — see [Known Issues](#known-issues--opportunities-for-improvement). `appointments` is a working day-view with book/edit/cancel/status (month view is Phase 2).
+\* `team` is a stub — see [Known Issues](#known-issues--opportunities-for-improvement). `settings` is editable for OWNER since Week 06 (`PATCH /api/account`); STAFF sees it read-only. `appointments` is a working day-view with book/edit/cancel/status (month view is Phase 2).
 
 **Rendering strategy:** server components by default; `"use client"` only where interactivity is required (forms, optimistic list updates). Data fetching happens in server components and route handlers, not in client components.
 
@@ -231,6 +245,7 @@ All endpoints are route handlers under `src/app/api`. They return JSON, require 
 | `PATCH` | `/api/appointments/[id]` | Update date, time, client, or services | Yes |
 | `PATCH` | `/api/appointments/[id]/status` | Update status (Scheduled, Completed, Cancelled, No-show) | Yes |
 | `DELETE` | `/api/appointments/[id]` | Delete an appointment record | Yes |
+| `PATCH` | `/api/account` | Update studio name, timezone, currency | Yes (owner) |
 
 Sign-up, sign-out, and password reset are React Server Actions in `src/lib/auth/actions.ts`, not REST endpoints — the session cookie is issued by Auth.js.
 
@@ -264,7 +279,7 @@ Sign-up, sign-out, and password reset are React Server Actions in `src/lib/auth/
 
 - **Appointment month view** — `/appointments` is a working single-day view with book/edit/cancel/status plus staff-scoped overlap detection (`409`). A month grid and drag-to-reschedule are Phase 2.
 - **Staff invitations** — the `StaffInvite` model and `requireOwner()` exist, but there is no `/api/staff/invitations` handler and `/team` shows an empty state.
-- **Studio settings editing** — `/settings` is read-only; values are set at signup and there is no update path yet.
+- **Studio settings editing** — implemented in Week 06: `PATCH /api/account` (owner-only) + `SettingsForm`, with the session refreshed in place via `useSession().update()`. STAFF sees `/settings` read-only.
 
 **Already handled (kept here because older milestones listed them as gaps):**
 
@@ -276,7 +291,7 @@ Sign-up, sign-out, and password reset are React Server Actions in `src/lib/auth/
 - Overlap detection is an application-level check (`assertNoOverlap` in `src/lib/appointments/scheduling.ts`), not a Postgres `EXCLUDE USING gist` constraint on `tstzrange`. That check is **not** race-proof: two requests submitted at the same instant can both pass it, so the constraint is the durable Phase 2 fix.
 - Password-reset links are printed to the server console rather than emailed — there is no mail provider wired up yet.
 - Single-day schedule view only; a month view and drag-to-reschedule are Phase 2.
-- No automated test suite yet; the spec's acceptance scenarios are written to be directly testable and should become the first Vitest/Playwright suite in a later sprint.
+- **Unit test suite** — Vitest, 30 tests (`npm run test`, also a CI step): day/week datetime bounds incl. DST transitions, Zod schema regressions from earlier sprints, token properties, money/time formatting. Database-backed helpers are excluded from the suite by design (they throw at import without `DATABASE_URL`); Playwright end-to-end is the planned second half.
 
 ---
 

@@ -106,7 +106,7 @@ export default async function DashboardPage() {
                 {stat.value}
               </p>
               {stat.hint ? (
-                <p className="mt-1 text-xs text-neutral-500">{stat.hint}</p>
+                <p className="mt-1 text-xs text-neutral-600">{stat.hint}</p>
               ) : null}
             </CardContent>
           </Card>
@@ -119,7 +119,7 @@ export default async function DashboardPage() {
         canDelete={user.role === "OWNER"}
       />
 
-      <p className="mt-6 text-xs text-neutral-500">
+      <p className="mt-6 text-xs text-neutral-600">
         Showing the next {upcoming.length} of {upcomingCount} upcoming
         appointment
         {upcomingCount === 1 ? "" : "s"}, as of{" "}

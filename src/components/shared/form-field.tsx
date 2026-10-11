@@ -41,7 +41,7 @@ export function FormField({
       <Label htmlFor={id}>{label}</Label>
       {children({ id, invalid: Boolean(error), describedBy })}
       {description ? (
-        <p id={descriptionId} className="text-xs text-neutral-500">
+        <p id={descriptionId} className="text-xs text-neutral-600">
           {description}
         </p>
       ) : null}

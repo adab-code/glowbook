@@ -75,7 +75,7 @@ export function UpcomingAppointments({
                     .map((entry) => entry.service.name)
                     .join(", ")}
                 </p>
-                <p className="text-xs text-neutral-500">
+                <p className="text-xs text-neutral-600">
                   {appointment.staffUser
                     ? `with ${fullName(appointment.staffUser)}`
                     : "No staff assigned"}

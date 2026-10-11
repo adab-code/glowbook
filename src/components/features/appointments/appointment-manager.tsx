@@ -132,7 +132,7 @@ export function AppointmentManager({
                         <span className="tabular-nums">
                           {formatTime(appointment.startsAt, timeZone)}
                         </span>
-                        <span className="text-neutral-400">
+                        <span className="text-neutral-600">
                           {" – "}
                           {formatTime(appointment.endsAt, timeZone)}
                         </span>
@@ -147,7 +147,7 @@ export function AppointmentManager({
                         .map((entry) => entry.service.name)
                         .join(", ")}
                     </p>
-                    <p className="text-xs text-neutral-500">
+                    <p className="text-xs text-neutral-600">
                       {appointment.staffUser
                         ? `with ${fullName(appointment.staffUser)}`
                         : "No team member assigned"}{" "}
@@ -192,7 +192,7 @@ export function AppointmentManager({
         </p>
       ) : null}
 
-      <p className="text-xs text-neutral-500">
+      <p className="text-xs text-neutral-600">
         Today only. Rescheduling an existing booking and the weekly calendar
         grid are tracked in the next milestone — this view covers booking,
         cancelling and closing appointments, which is what the daily dashboard

@@ -14,7 +14,7 @@ export function AuthCard({
   footer?: ReactNode;
 }) {
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center gap-6 bg-brand-50 px-4 py-10">
+    <main className="flex min-h-dvh flex-col items-center justify-center gap-6 bg-brand-50 px-4 py-10">
       <div className="flex items-center gap-2 text-lg font-semibold text-brand-700">
         <span aria-hidden className="text-2xl">
           ✦
@@ -31,6 +31,6 @@ export function AuthCard({
         <CardContent className="space-y-6">{children}</CardContent>
       </Card>
       {footer}
-    </div>
+    </main>
   );
 }

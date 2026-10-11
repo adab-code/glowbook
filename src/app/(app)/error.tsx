@@ -36,7 +36,7 @@ export default function AppError({
             </p>
           </div>
           {error.digest ? (
-            <p className="text-xs text-neutral-500">
+            <p className="text-xs text-neutral-600">
               Reference: <code>{error.digest}</code>
             </p>
           ) : null}
