@@ -28,6 +28,12 @@ The session reviewed the Week 06 scope against the carryover triaged in Week 05 
 5. **Board review.** #31, #35, #36 accepted as Done (pending merge); #33 left In Progress (Playwright half outstanding); #30, #32, #34 confirmed as the Week 07 backlog; the `Week 06` milestone created and all seven issues assigned to it.
 6. **Blockers.** None on the code. The standing constraint — no second member for cross-review after the teammate's withdrawal — is handled with a recorded self-review, as in Week 05.
 
+### Challenge, success, and insight (from this meeting)
+
+- **Challenge.** Vitest 5 refused to install against the project's pinned `@types/node@20` (peer conflict), so the suite runs on Vitest 3 with no `--legacy-peer-deps` in the lockfile. (Detail in §3.)
+- **Success.** For the first time there are committed tests passing live in the session (30/30), including the DST day-bound pins and the W03/W04 regression locks. (Detail in §3.)
+- **Insight.** Storing display fields in the JWT made settings edits silently stale until the next sign-in; the `update()` trigger turns the token from a snapshot into a refreshable view. (Detail in §3.)
+
 ### Major decisions made
 
 1. **Week 06 scope is the three rubric-adjacent gaps plus test foundations.** Editable settings (profile management), OWNER/STAFF enforcement (code quality / security), the mobile nav fix (responsive), and a Vitest unit suite (the first committed tests). Invitations, the calendar grid, the overlap constraint, and Playwright stay in the Week 07 backlog.
@@ -83,11 +89,10 @@ CI on the pull request is green: https://github.com/adab-code/glowbook/actions/r
 
 ## 4. W06 Team: Code Review Report
 
-Given my teammate's withdrawal, there was no second member to review this pull request, so I performed a self-review on it and recorded it on the PR itself.
+Given my teammate's withdrawal, there was no second member to review this pull request, so I performed a self-review and recorded it on the pull request itself — first on PR #40 (now squash-merged) and again, verbatim in scope, on the open duplicate PR #41.
 
 - **Repository reviewed:** https://github.com/adab-code/glowbook (my own)
-- **Pull request reviewed:** https://github.com/adab-code/glowbook/pull/40
-- **Review submitted:** https://github.com/adab-code/glowbook/pull/40 (one `COMMENTED` review summary)
+- **Pull request where the code review was submitted:** https://github.com/adab-code/glowbook/pull/41 (open; one `COMMENTED` review summary. The identical review also stands on https://github.com/adab-code/glowbook/pull/40, merged as `322d99a`.)
 
 The review verifies the four workstreams against the code: owner-only deletes with 403s, the settings PATCH + session-refresh path, the 30 unit tests and their deliberate DB-free boundary, and the disclosure-menu nav. Two non-blocking notes are recorded there: the Postgres exclusion constraint remains the durable overlap answer, and Playwright e2e is the open half of #33. CI is green; PR #40 was squash-merged after the review and the duplicate PR #41 stays open per team process.
 
@@ -101,3 +106,15 @@ Stated plainly, because a report that lists only what works is not useful to a r
 - **The merge closes #36, #31, and #35** via the `Closes` trailer on PR #40; the duplicate PR #41 carries no close trailers, so it stays open as the submission artifact without side effects.
 - **`NEXT_PUBLIC_SITE_URL` is set in the hosted Render environment** (confirmed by the owner in the Render dashboard); the Open Graph image resolves to the deploy.
 - **Render free-tier limits still apply** (30-day database expiry, ~1-minute cold starts), documented in `README.md`; the grader-facing note is unchanged.
+
+---
+
+## 6. Rubric Compliance Map (W06 Team: Project & Code Review Reports)
+
+| Rubric row | Evidence |
+|---|---|
+| Team Meeting (names of all present + assigned leader) | §1: Aaron Daniel Alfaro Barra present; team leader for Week 06, Aaron Daniel Alfaro Barra |
+| GitHub Repository (valid public URL) | §2: https://github.com/adab-code/glowbook |
+| GitHub Project Board (valid URL + recent updates + member assignments) | §2: https://github.com/users/adab-code/projects/2 — updated this sprint; all seven W06 issues assigned, milestone `Week 06` |
+| Code Review (URL of the PR where the review was submitted) | §4: https://github.com/adab-code/glowbook/pull/41 (`COMMENTED` review, open) |
+| Meeting summary with challenge + success + insight + participants (Canvas artifacts) | §1 (meeting summary with trio + participants) + §3 (detail) |
