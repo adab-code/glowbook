@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import {
   fieldErrors,
   forgotPasswordSchema,
+  inviteAcceptSchema,
   loginSchema,
   registerSchema,
   resetPasswordSchema,
@@ -232,4 +233,88 @@ export async function resetPasswordAction(
   });
 
   redirect("/login?reset=1");
+}
+
+/**
+ * Accept a staff invitation. The email and role come from the stored
+ * invitation row, never from the form, so an acceptor cannot escalate their
+ * own role by editing the request. Single-use: the row is stamped the moment
+ * the account is created, inside the same transaction.
+ */
+export async function acceptInviteAction(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const parsed = inviteAcceptSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success)
+    return { status: "error", fields: fieldErrors(parsed.error) };
+
+  const invitation = await db.staffInvite.findUnique({
+    where: { token: hashToken(parsed.data.token) },
+    include: { account: { select: { studioName: true } } },
+  });
+
+  if (
+    !invitation ||
+    invitation.acceptedAt ||
+    invitation.expiresAt < new Date()
+  ) {
+    return {
+      status: "error",
+      error:
+        "That invitation is no longer valid. Ask the studio owner for a new one.",
+    };
+  }
+
+  // Email is globally unique, so someone already registered anywhere cannot
+  // accept — they would collide on the unique index mid-transaction.
+  const existing = await db.staffUser.findUnique({
+    where: { email: invitation.email },
+    select: { id: true },
+  });
+  if (existing) {
+    return {
+      status: "error",
+      error: "That email address is already registered. Sign in instead.",
+    };
+  }
+
+  const passwordHash = await hash(parsed.data.password, 12);
+
+  try {
+    await db.$transaction(async (tx) => {
+      await tx.staffUser.create({
+        data: {
+          accountId: invitation.accountId,
+          email: invitation.email,
+          passwordHash,
+          role: invitation.role,
+          firstName: parsed.data.firstName,
+          lastName: parsed.data.lastName,
+          emailVerifiedAt: new Date(),
+        },
+      });
+      await tx.staffInvite.update({
+        where: { id: invitation.id },
+        data: { acceptedAt: new Date() },
+      });
+    });
+  } catch (cause) {
+    // Unique-violation race between the check above and the insert.
+    if (cause instanceof Error && cause.message.includes("Unique constraint")) {
+      return {
+        status: "error",
+        error: "That email address is already registered. Sign in instead.",
+      };
+    }
+    throw cause;
+  }
+
+  await signIn("credentials", {
+    email: invitation.email,
+    password: parsed.data.password,
+    redirectTo: "/dashboard",
+  });
+
+  redirect("/dashboard");
 }
