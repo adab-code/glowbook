@@ -18,7 +18,7 @@ Everything below is live and verifiable right now:
 | Weekly sprint & code-review reports | [`docs/w02-reports.md`](docs/w02-reports.md) … [`docs/w06-reports.md`](docs/w06-reports.md) |
 | Demo credentials + grader test steps | [Demo credentials](#demo-credentials) and [How to test](#how-to-test-for-the-grader) below |
 
-Delivered and working: sign-up / sign-in / sign-out with protected routes (Auth.js v5); six dynamic views (dashboard, services, clients, appointments day/week/month, settings, team); full CRUD on services, clients, and appointments; staff invitations with single-use links; OWNER/STAFF role enforcement (destructive deletes are owner-only, `403` for staff); editable studio settings with in-place session refresh; rescheduling with overlap protection (friendly 409 pre-check plus a Postgres exclusion-constraint backstop — apply the migration on Render, see Known Issues); a 45-test Vitest suite plus an 11-spec Playwright suite, both in CI; a responsive mobile nav; AA-clean text contrast; Lighthouse (mobile) 98/100/100/100 on `/login` and 84/100/100/60 on `/dashboard` (SEO is `noindex` by design on private routes). Known gaps are listed under [Known Issues](#known-issues--opportunities-for-improvement) — nothing shipped is overstated here.
+Delivered and working: sign-up / sign-in / sign-out with protected routes (Auth.js v5); six dynamic views (dashboard, services, clients, appointments day/week/month, settings, team); full CRUD on services, clients, and appointments; staff invitations with single-use links; OWNER/STAFF role enforcement (destructive deletes are owner-only, `403` for staff); editable studio settings with in-place session refresh; rescheduling with overlap protection (friendly 409 pre-check plus a Postgres exclusion-constraint backstop, enforced in production); a 45-test Vitest suite plus an 11-spec Playwright suite, both in CI; a responsive mobile nav; AA-clean text contrast; Lighthouse (mobile) 98/100/100/100 on `/login` and 84/100/100/60 on `/dashboard` (SEO is `noindex` by design on private routes). Known gaps are listed under [Known Issues](#known-issues--opportunities-for-improvement) — nothing shipped is overstated here.
 
 ---
 
@@ -300,9 +300,10 @@ Sign-up, sign-out, and password reset are React Server Actions in `src/lib/auth/
 
 - **Drag-to-reschedule** — moving a booking uses the explicit Move dialog (date/time picker + overlap 409); dragging blocks across the grid is still backlog.
 - **Email delivery** — invitation and password-reset links are copied from the UI / printed to the console; no mail provider is wired up.
-- **Apply the overlap migration on Render** — the `appointment_no_overlap` exclusion constraint ships as migration `20261011035328_appointment_overlap_exclusion`, but Render's free tier has no pre-deploy hook, so run `npx prisma migrate deploy` once against the production database (see step 6 of Deploying to Render). Until then the friendly application-level 409 is the only guard.
 
 **Already handled (kept here because older milestones listed them as gaps):**
+
+- **Overlap exclusion constraint is live in production** — `appointment_no_overlap` (migration `20261011035328_appointment_overlap_exclusion`) was applied to the Render database with `prisma migrate deploy` and verified (constraint + `btree_gist` present, booking/overlap smoke-tested). Render's free tier has no pre-deploy hook, so *future* migrations still need that manual step (see step 6 of Deploying to Render).
 
 - Route boundaries exist: `src/app/(app)/error.tsx` (retry + back to dashboard), `src/app/(app)/loading.tsx` (spinner, `role="status"`), `src/app/not-found.tsx` (branded 404 with way back).
 - Day/week windows resolve in the studio's `Account.timezone` (`zonedDayBounds` / `zonedWeekBounds`); times render through the same zone.
