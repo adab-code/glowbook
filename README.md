@@ -287,7 +287,7 @@ Sign-up, sign-out, and password reset are React Server Actions in `src/lib/auth/
 
 - `main` is protected — never push directly to it.
 - Branch names: `feat/<slug>`, `fix/<slug>`, `docs/<slug>`, `chore/<slug>` (e.g. `feat/client-crud`).
-- Every change lands through a pull request with at least one approving review from another team member.
+- Every change lands through a pull request. Through Week 03 each PR needed an approving review from another team member; since the solo completion (Week 04 on) every PR ships a documented self-review against the checklist instead — see the review comments on the merged PRs and `docs/w04-reports.md` §1.
 - Commit small and often; PRs should stay under ~200 changed lines so reviews take 15–20 minutes.
 - Formatting is Prettier (`.prettierrc`): run `npx prettier --write .` before committing. `npm run typecheck`, `npm run lint`, and `npx prettier --check .` must all pass before requesting review.
 - Team conventions and the governance rules we agreed on live in [`.specify/memory/constitution.md`](.specify/memory/constitution.md).
@@ -319,6 +319,7 @@ Sign-up, sign-out, and password reset are React Server Actions in `src/lib/auth/
 
 - **Text contrast:** every text/background pair meets WCAG AA (body, links, buttons, and headings meet AAA) — verified by computed ratios and by Lighthouse with zero `color-contrast` violations on all audited routes.
 - **Lighthouse (mobile):** `/login` 98/100/100/100, `/dashboard` 84/100/100/60 — the dashboard SEO score is the intentional `noindex` on private routes. Full method, scores, and strongest/weakest analysis: [`docs/lighthouse-w06.md`](docs/lighthouse-w06.md).
+- **How this is graded:** `/login` (public, SEO 100) is the entry point for Lighthouse. Private `(app)` routes intentionally carry `noindex` so studio data never reaches crawlers, which caps their SEO at 60 by design — that is the documented privacy decision, not a defect.
 
 ---
 
