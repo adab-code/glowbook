@@ -75,6 +75,8 @@ export async function registerAction(
 
   const { studioName, firstName, lastName, email, password } = parsed.data;
   const normalizedEmail = email.toLowerCase();
+  // TEMPORARY e2e diagnostic (removed once the signup-signin path is fixed).
+  console.warn("[auth-debug] register pwLen:", password.length);
 
   const existing = await db.staffUser.findUnique({
     where: { email: normalizedEmail },

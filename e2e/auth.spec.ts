@@ -15,6 +15,8 @@ test("signup creates a studio and lands on the dashboard", async ({ page }) => {
   await page.getByLabel("Last name").fill("Owner");
   await page.getByLabel("Email").fill(`e2e-owner-${uid()}@example.com`);
   await page.getByLabel("Password").fill("password123");
+  // Diagnostic: prove what the field holds before submit (see CI signup flake).
+  await expect(page.getByLabel("Password")).toHaveValue("password123");
   await page.getByRole("button", { name: "Create studio" }).click();
   await expectOnDashboard(page);
   await signOut(page);
