@@ -18,14 +18,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(raw) {
-        // TEMPORARY e2e diagnostic (removed once the signup-signin path is fixed).
-        console.warn("[auth-debug] authorize called");
         const parsed = loginSchema.safeParse(raw);
-        if (!parsed.success) {
-          // TEMPORARY e2e diagnostic (removed once the signup-signin path is fixed).
-          console.warn("[auth-debug] authorize: schema reject");
-          return null;
-        }
+        if (!parsed.success) return null;
 
         const email = parsed.data.email.toLowerCase();
         const user = await db.staffUser.findUnique({
@@ -33,29 +27,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           include: { account: true },
         });
 
-        // TEMPORARY e2e diagnostic (removed once the signup-signin path is fixed).
-        if (!user) console.warn("[auth-debug] authorize: no user for", email);
-        else {
-          if (!user.passwordHash)
-            console.warn("[auth-debug] authorize: missing passwordHash");
-          if (!user.isActive)
-            console.warn("[auth-debug] authorize: inactive account");
-          if (!user.account)
-            console.warn("[auth-debug] authorize: missing account");
-        }
-
         // Same response for unknown email, wrong password, and deactivated account:
         // never reveal whether an account exists (constitution §III).
         if (!user?.passwordHash || !user.isActive || !user.account) return null;
 
         const valid = await compare(parsed.data.password, user.passwordHash);
-        // TEMPORARY e2e diagnostic (removed once the signup-signin path is fixed).
-        if (!valid)
-          console.warn("[auth-debug] authorize: compare false", {
-            pwLen: parsed.data.password.length,
-            hashLen: user.passwordHash.length,
-            hashPrefix: user.passwordHash.slice(0, 7),
-          });
         if (!valid) return null;
 
         await db.staffUser.update({

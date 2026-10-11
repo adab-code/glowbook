@@ -11,17 +11,20 @@ export const passwordSchema = z
   .min(8, "Use at least 8 characters")
   .max(128, "Passwords cannot exceed 128 characters");
 
-export const registerSchema = z
-  .object({
-    studioName: trimmed
-      .min(2, "Enter your studio name")
-      .max(120, "Studio name cannot exceed 120 characters"),
-    firstName: trimmed.min(1, "Enter your first name").max(80),
-    lastName: trimmed.min(1, "Enter your last name").max(80),
-    email: emailSchema,
-    password: passwordSchema,
-  })
-  .strict();
+// Not `.strict()`: this schema validates browser FormData, and the transport
+// adds its own fields around the inputs (the loginSchema comment below tells
+// that story — strict mode silently broke sign-up the same way, and the
+// Playwright signup spec proved it). Zod's default `strip` mode validates the
+// declared fields and drops the rest.
+export const registerSchema = z.object({
+  studioName: trimmed
+    .min(2, "Enter your studio name")
+    .max(120, "Studio name cannot exceed 120 characters"),
+  firstName: trimmed.min(1, "Enter your first name").max(80),
+  lastName: trimmed.min(1, "Enter your last name").max(80),
+  email: emailSchema,
+  password: passwordSchema,
+});
 
 // Not `.strict()`: both callers legitimately pass extra transport fields.
 // Auth.js forwards `csrfToken` and `redirectTo` into the credentials provider,
@@ -35,13 +38,14 @@ export const loginSchema = z.object({
 
 export const forgotPasswordSchema = z.object({ email: emailSchema }).strict();
 
+// Not `.strict()`: same transport-fields lesson as registerSchema above — this
+// validates browser FormData, so unknown keys are stripped, not rejected.
 export const resetPasswordSchema = z
   .object({
     token: trimmed.min(1, "Missing reset token"),
     password: passwordSchema,
     confirm: passwordSchema,
   })
-  .strict()
   .refine((value) => value.password === value.confirm, {
     message: "Both passwords must match",
     path: ["confirm"],
@@ -209,6 +213,9 @@ export const staffInviteSchema = z
  * Accepting a staff invitation (POSTed by the invite-accept form as FormData).
  * The email and role come from the stored invitation row, never from the form,
  * so an acceptor cannot promote themselves by editing the request.
+ *
+ * Not `.strict()`: same transport-fields lesson as registerSchema — this
+ * validates browser FormData, so unknown keys are stripped, not rejected.
  */
 export const inviteAcceptSchema = z
   .object({
@@ -218,7 +225,6 @@ export const inviteAcceptSchema = z
     password: passwordSchema,
     confirm: passwordSchema,
   })
-  .strict()
   .refine((value) => value.password === value.confirm, {
     message: "Both passwords must match",
     path: ["confirm"],

@@ -70,24 +70,11 @@ export async function registerAction(
   formData: FormData,
 ): Promise<FormState> {
   const parsed = registerSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) {
-    // TEMPORARY e2e diagnostic (paths/codes only — never values).
-    console.warn(
-      "[auth-debug] register invalid:",
-      JSON.stringify(
-        parsed.error.issues.map((issue) => ({
-          path: issue.path,
-          code: issue.code,
-        })),
-      ),
-    );
+  if (!parsed.success)
     return { status: "error", fields: fieldErrors(parsed.error) };
-  }
 
   const { studioName, firstName, lastName, email, password } = parsed.data;
   const normalizedEmail = email.toLowerCase();
-  // TEMPORARY e2e diagnostic (removed once the signup-signin path is fixed).
-  console.warn("[auth-debug] register pwLen:", password.length);
 
   const existing = await db.staffUser.findUnique({
     where: { email: normalizedEmail },
@@ -259,31 +246,13 @@ export async function acceptInviteAction(
   formData: FormData,
 ): Promise<FormState> {
   const parsed = inviteAcceptSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) {
-    // TEMPORARY e2e diagnostic (paths/codes only — never values).
-    console.warn(
-      "[auth-debug] accept invalid:",
-      JSON.stringify(
-        parsed.error.issues.map((issue) => ({
-          path: issue.path,
-          code: issue.code,
-        })),
-      ),
-    );
+  if (!parsed.success)
     return { status: "error", fields: fieldErrors(parsed.error) };
-  }
 
   const invitation = await db.staffInvite.findUnique({
     where: { token: hashToken(parsed.data.token) },
     include: { account: { select: { studioName: true } } },
   });
-
-  // TEMPORARY e2e diagnostic (no secrets: only which guard tripped).
-  if (!invitation) console.warn("[auth-debug] accept: invite row not found");
-  else if (invitation.acceptedAt)
-    console.warn("[auth-debug] accept: already accepted");
-  else if (invitation.expiresAt < new Date())
-    console.warn("[auth-debug] accept: expired");
 
   if (
     !invitation ||
