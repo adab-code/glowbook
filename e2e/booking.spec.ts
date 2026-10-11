@@ -12,7 +12,12 @@ test("owner can book a slot, an overlap is refused, then it is cancelled", async
   await page.goto("/appointments");
 
   async function fillBooking() {
-    await page.getByRole("button", { name: "Book appointment" }).click();
+    // Two "Book appointment" buttons coexist (the trigger and the empty-state
+    // action), so the opener takes the first and the submit stays form-scoped.
+    await page
+      .getByRole("button", { name: "Book appointment" })
+      .first()
+      .click();
     await page.getByLabel("Client").selectOption({ label: "Sofía Ramírez" });
     await page
       .getByRole("checkbox", { name: /Classic eyelash extensions/ })
@@ -21,12 +26,18 @@ test("owner can book a slot, an overlap is refused, then it is cancelled", async
   }
 
   await fillBooking();
-  await page.getByRole("button", { name: "Book appointment" }).click();
+  await page
+    .locator("form")
+    .getByRole("button", { name: "Book appointment" })
+    .click();
   await expect(page.getByText("Appointment booked.")).toBeVisible();
   await expect(page.getByText("Sofía Ramírez").first()).toBeVisible();
 
   // Same resource, same slot: the friendly 409 names the clash (FR-021).
   await fillBooking();
-  await page.getByRole("button", { name: "Book appointment" }).click();
+  await page
+    .locator("form")
+    .getByRole("button", { name: "Book appointment" })
+    .click();
   await expect(page.getByText(/overlap/i).first()).toBeVisible();
 });

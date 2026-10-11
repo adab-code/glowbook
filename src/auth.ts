@@ -19,13 +19,28 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
       async authorize(raw) {
         const parsed = loginSchema.safeParse(raw);
-        if (!parsed.success) return null;
+        if (!parsed.success) {
+          // TEMPORARY e2e diagnostic (removed once the signup-signin path is fixed).
+          console.warn("[auth-debug] authorize: schema reject");
+          return null;
+        }
 
         const email = parsed.data.email.toLowerCase();
         const user = await db.staffUser.findUnique({
           where: { email },
           include: { account: true },
         });
+
+        // TEMPORARY e2e diagnostic (removed once the signup-signin path is fixed).
+        if (!user) console.warn("[auth-debug] authorize: no user for", email);
+        else {
+          if (!user.passwordHash)
+            console.warn("[auth-debug] authorize: missing passwordHash");
+          if (!user.isActive)
+            console.warn("[auth-debug] authorize: inactive account");
+          if (!user.account)
+            console.warn("[auth-debug] authorize: missing account");
+        }
 
         // Same response for unknown email, wrong password, and deactivated account:
         // never reveal whether an account exists (constitution §III).
