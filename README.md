@@ -6,6 +6,22 @@ Booking and client management for independent beauty professionals and small stu
 
 ---
 
+## Final Submission Status (W06) — for the evaluator
+
+Everything below is live and verifiable right now:
+
+| Item | Link / Location |
+|---|---|
+| Live application | https://glowbook-lzts.onrender.com |
+| Product demo summary (2–3 paragraphs) | [`docs/product-demo.md`](docs/product-demo.md) |
+| Lighthouse mobile evidence + contrast audit | [`docs/lighthouse-w06.md`](docs/lighthouse-w06.md) |
+| Weekly sprint & code-review reports | [`docs/w02-reports.md`](docs/w02-reports.md) … [`docs/w06-reports.md`](docs/w06-reports.md) |
+| Demo credentials + grader test steps | [Demo credentials](#demo-credentials) and [How to test](#how-to-test-for-the-grader) below |
+
+Delivered and working: sign-up / sign-in / sign-out with protected routes (Auth.js v5); five dynamic views (dashboard, services, clients, appointments, settings); full CRUD on services, clients, and appointments; OWNER/STAFF role enforcement (destructive deletes are owner-only, `403` for staff); editable studio settings with in-place session refresh; a 30-test Vitest suite in CI; a responsive mobile nav; AA-clean text contrast; Lighthouse (mobile) 98/100/100/100 on `/login` and 84/100/100/60 on `/dashboard` (SEO is `noindex` by design on private routes). Known gaps are listed under [Known Issues](#known-issues--opportunities-for-improvement) — nothing shipped is overstated here.
+
+---
+
 ## Team Members
 
 | Name | GitHub | Focus areas |
@@ -21,7 +37,7 @@ Booking and client management for independent beauty professionals and small stu
 
 The MVP scope comes from [`docs/glowbook-spec.md`](docs/glowbook-spec.md) and is tracked on the [GitHub Project Board](https://github.com/users/adab-code/projects/2).
 
-- **Account access** — studio sign-up, sign-in, sign-out, password reset, staff invites, per-studio data isolation
+- **Account access** — studio sign-up, sign-in, sign-out, password reset, staff invites (planned — see [Known Issues](#known-issues--opportunities-for-improvement)), per-studio data isolation
 - **Service catalog** — CRUD with required-field validation and delete confirmation when appointments reference a service
 - **Client profiles** — CRUD with free-form notes (allergies, preferences) and appointment history
 - **Appointment calendar** — create, view, edit, and cancel bookings with double-booking (overlap) detection
