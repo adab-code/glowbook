@@ -18,7 +18,7 @@ Everything below is live and verifiable right now:
 | Weekly sprint & code-review reports | [`docs/w02-reports.md`](docs/w02-reports.md) … [`docs/w06-reports.md`](docs/w06-reports.md) |
 | Demo credentials + grader test steps | [Demo credentials](#demo-credentials) and [How to test](#how-to-test-for-the-grader) below |
 
-Delivered and working: sign-up / sign-in / sign-out with protected routes (Auth.js v5); five dynamic views (dashboard, services, clients, appointments, settings); full CRUD on services, clients, and appointments; OWNER/STAFF role enforcement (destructive deletes are owner-only, `403` for staff); editable studio settings with in-place session refresh; a 30-test Vitest suite in CI; a responsive mobile nav; AA-clean text contrast; Lighthouse (mobile) 98/100/100/100 on `/login` and 84/100/100/60 on `/dashboard` (SEO is `noindex` by design on private routes). Known gaps are listed under [Known Issues](#known-issues--opportunities-for-improvement) — nothing shipped is overstated here.
+Delivered and working: sign-up / sign-in / sign-out with protected routes (Auth.js v5); six dynamic views (dashboard, services, clients, appointments day/week/month, settings, team); full CRUD on services, clients, and appointments; staff invitations with single-use links; OWNER/STAFF role enforcement (destructive deletes are owner-only, `403` for staff); editable studio settings with in-place session refresh; rescheduling with overlap protection (friendly 409 pre-check plus a Postgres exclusion-constraint backstop — apply the migration on Render, see Known Issues); a 45-test Vitest suite plus an 11-spec Playwright suite, both in CI; a responsive mobile nav; AA-clean text contrast; Lighthouse (mobile) 98/100/100/100 on `/login` and 84/100/100/60 on `/dashboard` (SEO is `noindex` by design on private routes). Known gaps are listed under [Known Issues](#known-issues--opportunities-for-improvement) — nothing shipped is overstated here.
 
 ---
 
@@ -37,10 +37,10 @@ Delivered and working: sign-up / sign-in / sign-out with protected routes (Auth.
 
 The MVP scope comes from [`docs/glowbook-spec.md`](docs/glowbook-spec.md) and is tracked on the [GitHub Project Board](https://github.com/users/adab-code/projects/2).
 
-- **Account access** — studio sign-up, sign-in, sign-out, password reset, staff invites (planned — see [Known Issues](#known-issues--opportunities-for-improvement)), per-studio data isolation
+- **Account access** — studio sign-up, sign-in, sign-out, password reset, staff invitations (link-based: the owner copies the link from `/team`, no mail provider), per-studio data isolation
 - **Service catalog** — CRUD with required-field validation and delete confirmation when appointments reference a service
 - **Client profiles** — CRUD with free-form notes (allergies, preferences) and appointment history
-- **Appointment calendar** — create, view, edit, and cancel bookings with double-booking (overlap) detection
+- **Appointment calendar** — day/week/month views, book, reschedule (Move), edit, and cancel bookings with double-booking protection (friendly 409 pre-check plus a Postgres exclusion constraint backstop)
 - **Daily dashboard** — today's appointments in chronological order plus an upcoming preview, with status updates inline
 - **Discoverability** — per-page titles and descriptions, a code-generated Open Graph image, and `noindex` on the private `(app)` routes so studio data is never surfaced to crawlers
 
@@ -135,7 +135,9 @@ Auth provider: **Auth.js v5** (Credentials provider; session in a signed cookie 
 2. **Exercise two-model CRUD** — `/services`: create/edit/archive a service (archiving keeps past bookings). `/clients`: create/edit/archive a client with notes. `/appointments`: book a slot (overlap returns `409`), edit, change status, cancel.
 3. **Verify role enforcement** — open `/settings` as OWNER, change the studio name/timezone/currency, save: the sidebar branding updates with no sign-out. Then sign in as STAFF (`staff@glowbook.dev`, same password): `/settings` is read-only, Archive/Delete buttons are hidden, and calling `DELETE /api/services/:id` directly returns `403`.
 4. **Sign-up flow** — `/signup` creates a brand-new studio + OWNER account, proving multi-tenancy (each studio only sees its own data).
-5. **Sign-out** — the header menu signs out and the auth gate (`proxy.ts`) bounces logged-out visitors back to `/login`.
+5. **Invitations** — as OWNER open `/team`, invite `teammate@example.com`, copy the link, open it in an incognito window, set a name + password, and land on the dashboard as the new STAFF. Revoke a second invite to see the pending list update.
+6. **Calendar** — `/appointments` tabs Day/Week/Month with prev/today/next navigation; open a day cell from the month grid; use Move on a booking to change its slot (an overlapping move answers `409` on the field).
+7. **Sign-out** — the header menu signs out and the auth gate (`proxy.ts`) bounces logged-out visitors back to `/login`.
 
 ### Other scripts
 
@@ -143,7 +145,8 @@ Auth provider: **Auth.js v5** (Credentials provider; session in a signed cookie 
 npm run build        # production build
 npm run start        # serve the production build
 npm run lint         # ESLint
-npm run test         # Vitest unit suite (30 tests)
+npm run test         # Vitest unit suite (45 tests)
+npm run test:e2e      # Playwright end-to-end suite (11 specs, needs a database — see below)
 ```
 
 ---
@@ -203,13 +206,13 @@ src/
     layout.tsx         → root layout, next/font (Geist, Geist_Mono, Fraunces)
     globals.css        → Tailwind v4 design tokens in an @theme block
     (auth)/            → login, signup, forgot-password, reset-password
-    (app)/            → authenticated shell: dashboard, services, clients, appointments*, team*, settings
+    (app)/            → authenticated shell: dashboard, services, clients, appointments, team, settings
     api/               → route handlers (client → server → DB)
   components/
     ui/                → design-system primitives: button, card, input, label
     shared/            → form-field, submit-button, confirm-dialog, status-badge, empty-state, page-header, spinner
     layout/            → auth-card, app-sidebar, app-header
-    features/          → auth/, services/, clients/, appointments/, settings/  *(staff/ not built yet)*
+    features/          → auth/, services/, clients/, appointments/, settings/, team/
   lib/
     db.ts              → Prisma 7 client singleton with the @prisma/adapter-pg driver adapter
     auth/              → session.ts (requireUser / requireOwner), actions.ts (server actions)
@@ -217,7 +220,8 @@ src/
     validations/       → Zod 4 schemas shared by forms and route handlers
     utils/             → format, tokens, api-client, datetime
   types/               → next-auth module augmentation
-vitest.config.ts     → Vitest unit suite (30 tests: datetime, schemas, tokens, format)
+vitest.config.ts     → Vitest unit suite (45 tests: datetime, schemas, tokens, format, overlap)
+playwright.config.ts → Playwright end-to-end suite (11 specs in e2e/, sequential Chromium)
 prisma/
   schema.prisma, migrations/, seed.ts
 docs/
@@ -230,7 +234,7 @@ specs/001-glowbook-booking/  → original Spec-Kit working spec (superseded by d
 .github/copilot-instructions.md → AI assistant rules for the whole team
 ```
 
-\* `team` is a stub — see [Known Issues](#known-issues--opportunities-for-improvement). `settings` is editable for OWNER since Week 06 (`PATCH /api/account`); STAFF sees it read-only. `appointments` is a working day-view with book/edit/cancel/status (month view is Phase 2).
+\* `/team` is fully working (invite/revoke/members for OWNER, read-only for STAFF). `appointments` has day/week/month views with book/move/cancel/status (drag-to-reschedule stays in the backlog).
 
 **Rendering strategy:** server components by default; `"use client"` only where interactivity is required (forms, optimistic list updates). Data fetching happens in server components and route handlers, not in client components.
 
@@ -262,6 +266,9 @@ All endpoints are route handlers under `src/app/api`. They return JSON, require 
 | `PATCH` | `/api/appointments/[id]/status` | Update status (Scheduled, Completed, Cancelled, No-show) | Yes |
 | `DELETE` | `/api/appointments/[id]` | Delete an appointment record | Yes |
 | `PATCH` | `/api/account` | Update studio name, timezone, currency | Yes (owner) |
+| `GET` | `/api/staff/invitations` | List pending staff invitations | Yes (owner) |
+| `POST` | `/api/staff/invitations` | Invite someone (returns a one-time accept link; no mail provider) | Yes (owner) |
+| `DELETE` | `/api/staff/invitations/[id]` | Revoke a pending invitation | Yes (owner) |
 
 Sign-up, sign-out, and password reset are React Server Actions in `src/lib/auth/actions.ts`, not REST endpoints — the session cookie is issued by Auth.js.
 
@@ -269,8 +276,6 @@ Sign-up, sign-out, and password reset are React Server Actions in `src/lib/auth/
 
 | Method | Endpoint | Purpose | Auth |
 |---|---|---|---|
-| `GET` | `/api/staff/invitations` | List pending staff invitations | Yes |
-| `POST` | `/api/staff/invitations` | Invite a staff member by email | Yes (owner) |
 | `GET` | `/api/services/[id]` | Read one service | Yes |
 | `GET` | `/api/clients/[id]` | Read a client with their appointments | Yes |
 
@@ -291,11 +296,11 @@ Sign-up, sign-out, and password reset are React Server Actions in `src/lib/auth/
 
 ## Known Issues & Opportunities
 
-**Not built yet (next milestones):**
+**Not built yet (backlog):**
 
-- **Appointment month view** — `/appointments` is a working single-day view with book/edit/cancel/status plus staff-scoped overlap detection (`409`). A month grid and drag-to-reschedule are Phase 2.
-- **Staff invitations** — the `StaffInvite` model and `requireOwner()` exist, but there is no `/api/staff/invitations` handler and `/team` shows an empty state.
-- **Studio settings editing** — implemented in Week 06: `PATCH /api/account` (owner-only) + `SettingsForm`, with the session refreshed in place via `useSession().update()`. STAFF sees `/settings` read-only.
+- **Drag-to-reschedule** — moving a booking uses the explicit Move dialog (date/time picker + overlap 409); dragging blocks across the grid is still backlog.
+- **Email delivery** — invitation and password-reset links are copied from the UI / printed to the console; no mail provider is wired up.
+- **Apply the overlap migration on Render** — the `appointment_no_overlap` exclusion constraint ships as migration `20261011035328_appointment_overlap_exclusion`, but Render's free tier has no pre-deploy hook, so run `npx prisma migrate deploy` once against the production database (see step 6 of Deploying to Render). Until then the friendly application-level 409 is the only guard.
 
 **Already handled (kept here because older milestones listed them as gaps):**
 
@@ -307,7 +312,8 @@ Sign-up, sign-out, and password reset are React Server Actions in `src/lib/auth/
 - Overlap detection is two layers: the application-level check (`assertNoOverlap`) returns a friendly 409 naming the clash, and the `appointment_no_overlap` Postgres exclusion constraint (migration `20261011035328_appointment_overlap_exclusion`) makes it race-safe — a request that slips past the check fails its write and gets the same 409. Cancelled rows collapse to an empty range so they free their slot while surviving as history.
 - Password-reset links are printed to the server console rather than emailed — there is no mail provider wired up yet.
 - Single-day schedule view only; a month view and drag-to-reschedule are Phase 2.
-- **Unit test suite** — Vitest, 30 tests (`npm run test`, also a CI step): day/week datetime bounds incl. DST transitions, Zod schema regressions from earlier sprints, token properties, money/time formatting. Database-backed helpers are excluded from the suite by design (they throw at import without `DATABASE_URL`); Playwright end-to-end is the planned second half.
+- **Unit test suite** — Vitest, 45 tests (`npm run test`, also a CI step): day/week/month datetime bounds incl. DST transitions, Zod schema regressions from earlier sprints, token properties, money/time formatting, overlap-violation mapping. Database-backed helpers are excluded from the suite by design (they throw at import without `DATABASE_URL`).
+- **End-to-end suite** — Playwright, 11 specs (`npm run test:e2e`, also a CI job against a Postgres service): signup/login/logout, services/clients CRUD, booking + overlap 409, staff read-only + 403, settings refresh, invite join/revoke, calendar tabs + move. Needs a database locally (same `DATABASE_URL` you develop against, migrated + seeded); CI provisions its own.
 
 ## Accessibility & Performance
 
