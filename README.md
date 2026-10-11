@@ -304,7 +304,7 @@ Sign-up, sign-out, and password reset are React Server Actions in `src/lib/auth/
 
 **Known limitations of what is built:**
 
-- Overlap detection is an application-level check (`assertNoOverlap` in `src/lib/appointments/scheduling.ts`), not a Postgres `EXCLUDE USING gist` constraint on `tstzrange`. That check is **not** race-proof: two requests submitted at the same instant can both pass it, so the constraint is the durable Phase 2 fix.
+- Overlap detection is two layers: the application-level check (`assertNoOverlap`) returns a friendly 409 naming the clash, and the `appointment_no_overlap` Postgres exclusion constraint (migration `20261011035328_appointment_overlap_exclusion`) makes it race-safe — a request that slips past the check fails its write and gets the same 409. Cancelled rows collapse to an empty range so they free their slot while surviving as history.
 - Password-reset links are printed to the server console rather than emailed — there is no mail provider wired up yet.
 - Single-day schedule view only; a month view and drag-to-reschedule are Phase 2.
 - **Unit test suite** — Vitest, 30 tests (`npm run test`, also a CI step): day/week datetime bounds incl. DST transitions, Zod schema regressions from earlier sprints, token properties, money/time formatting. Database-backed helpers are excluded from the suite by design (they throw at import without `DATABASE_URL`); Playwright end-to-end is the planned second half.

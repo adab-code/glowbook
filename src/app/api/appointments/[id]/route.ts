@@ -9,6 +9,8 @@ import {
   assertNoOverlap,
   findBookableClient,
   findOwnedAppointment,
+  isOverlapViolation,
+  overlapTaken,
   resolveBookingServices,
   resolveStaffUser,
   summariseBooking,
@@ -119,31 +121,38 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     }
 
     // Replace the join rows rather than diffing them: the service set is small, and a
-    // wholesale replace cannot leave a stale row behind.
-    const appointment = await db.appointment.update({
-      where: { id: current.id },
-      data: {
-        ...(client ? { clientId: client.id } : {}),
-        staffUserId: resolvedStaffUserId,
-        startsAt: nextStartsAt,
-        endsAt: nextEndsAt,
-        priceCentsTotal,
-        ...(cancellationReason === undefined
-          ? {}
-          : { cancellationReason: cancellationReason || null }),
-        ...(services
-          ? {
-              services: {
-                deleteMany: {},
-                create: services.map((service) => ({
-                  serviceId: service.id,
-                })),
-              },
-            }
-          : {}),
-      },
-      include: appointmentInclude,
-    });
+    // wholesale replace cannot leave a stale row behind. The UPDATE is covered by
+    // the `appointment_no_overlap` exclusion constraint, same as the create path.
+    let appointment;
+    try {
+      appointment = await db.appointment.update({
+        where: { id: current.id },
+        data: {
+          ...(client ? { clientId: client.id } : {}),
+          staffUserId: resolvedStaffUserId,
+          startsAt: nextStartsAt,
+          endsAt: nextEndsAt,
+          priceCentsTotal,
+          ...(cancellationReason === undefined
+            ? {}
+            : { cancellationReason: cancellationReason || null }),
+          ...(services
+            ? {
+                services: {
+                  deleteMany: {},
+                  create: services.map((service) => ({
+                    serviceId: service.id,
+                  })),
+                },
+              }
+            : {}),
+        },
+        include: appointmentInclude,
+      });
+    } catch (error) {
+      if (isOverlapViolation(error)) overlapTaken();
+      throw error;
+    }
 
     return NextResponse.json({ data: appointment });
   } catch (error) {

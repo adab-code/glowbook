@@ -7,6 +7,8 @@ import {
   appointmentInclude,
   assertNoOverlap,
   findOwnedAppointment,
+  isOverlapViolation,
+  overlapTaken,
 } from "@/lib/appointments/scheduling";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -56,17 +58,25 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       );
     }
 
-    const appointment = await db.appointment.update({
-      where: { id: current.id },
-      data: {
-        status,
-        // Kept alongside the status so the reason survives a later re-open instead of
-        // leaving stale text on an appointment that is scheduled again.
-        cancellationReason:
-          status === "CANCELLED" ? (cancellationReason ?? null) : null,
-      },
-      include: appointmentInclude,
-    });
+    // Re-opening claims the old slot again, so the UPDATE is covered by the
+    // `appointment_no_overlap` exclusion constraint, same as the create path.
+    let appointment;
+    try {
+      appointment = await db.appointment.update({
+        where: { id: current.id },
+        data: {
+          status,
+          // Kept alongside the status so the reason survives a later re-open instead of
+          // leaving stale text on an appointment that is scheduled again.
+          cancellationReason:
+            status === "CANCELLED" ? (cancellationReason ?? null) : null,
+        },
+        include: appointmentInclude,
+      });
+    } catch (error) {
+      if (isOverlapViolation(error)) overlapTaken();
+      throw error;
+    }
 
     return NextResponse.json({ data: appointment });
   } catch (error) {

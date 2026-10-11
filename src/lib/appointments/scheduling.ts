@@ -136,10 +136,12 @@ type OverlapInput = {
  *
  * Only `accountId` comes from the session, so this can never see another studio's rows.
  *
- * **Not race-safe.** Two requests in the same instant can both read "no conflict" and
- * both write. The durable fix is a Postgres exclusion constraint,
- * `EXCLUDE USING gist (staff_user_id WITH =, tstzrange(starts_at, ends_at) WITH &&)`
- * with `btree_gist` — documented in `docs/data-model.md`.
+ * **Race safety.** This check alone is not race-safe — two requests in the same
+ * instant can both read "no conflict" and both write. The
+ * `appointment_no_overlap` exclusion constraint (migration
+ * `20261011035328_appointment_overlap_exclusion`) is the backstop: the loser's
+ * write fails and the route maps it via `isOverlapViolation` onto the same 409
+ * this function returns.
  */
 export async function assertNoOverlap(
   { accountId, staffUserId, startsAt, endsAt, excludeId }: OverlapInput,
@@ -170,4 +172,18 @@ export async function assertNoOverlap(
 
   // Reported against `startsAt` so the booking form can point at the field to change.
   throw conflict(message, { startsAt: message });
+}
+
+/**
+ * Maps a database exclusion-violation on `appointment_no_overlap` back onto the
+ * same 409 the application-level check returns. Pure helper, re-exported here
+ * so route handlers keep a single import site.
+ */
+export { isOverlapViolation } from "./overlap";
+
+/** The 409 a constraint loser gets — same shape as the pre-check's. */
+export function overlapTaken(): never {
+  throw conflict("That slot was just taken. Pick another time.", {
+    startsAt: "Someone else booked this slot a moment ago.",
+  });
 }
