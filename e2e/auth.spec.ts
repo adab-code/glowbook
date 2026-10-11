@@ -17,29 +17,18 @@ test("signup creates a studio and lands on the dashboard", async ({ page }) => {
   await page.getByLabel("Password").fill("password123");
   // Diagnostic: prove what the field holds before submit (see CI signup flake).
   await expect(page.getByLabel("Password")).toHaveValue("password123");
-  await page.getByRole("button", { name: "Create studio" }).click();
-  // TEMPORARY diagnostic: input VALUES (textContent cannot see them) plus any
-  // visible error, so the CI log shows whether the action errored or the page
-  // reloaded. Lengths only — never the secrets themselves.
-  await page.waitForTimeout(4000);
-  const lengths: Record<string, number | string> = {};
-  for (const label of ["Studio name", "Email", "Password"]) {
-    try {
-      lengths[label] = (await page.getByLabel(label).inputValue()).length;
-    } catch {
-      lengths[label] = "<gone>";
-    }
-  }
-  const alerts = await page
-    .locator('[role="alert"]')
-    .allTextContents()
-    .catch(() => [] as string[]);
-  console.log(
-    "[e2e-debug] signup state:",
-    page.url(),
-    JSON.stringify(lengths),
-    JSON.stringify(alerts.map((text) => text.slice(0, 200))),
+  // TEMPORARY diagnostic: log every request around the submit so the CI log
+  // shows whether the action dispatched (POST) or nothing left the browser.
+  const traffic: string[] = [];
+  page.on("request", (request) =>
+    traffic.push(`${request.method()} ${new URL(request.url()).pathname}`),
   );
+  page.on("response", (response) =>
+    traffic.push(`-> ${response.status()} ${new URL(response.url()).pathname}`),
+  );
+  await page.getByRole("button", { name: "Create studio" }).click();
+  await page.waitForTimeout(5000);
+  console.log("[e2e-debug] signup traffic:", JSON.stringify(traffic));
   await expectOnDashboard(page);
   await signOut(page);
 });
