@@ -4,21 +4,7 @@ Booking and client management for independent beauty professionals and small stu
 
 **Stack:** Next.js 16 (App Router) · React 19 · TypeScript (strict) · Tailwind CSS v4 · PostgreSQL (Render) + Prisma · Auth.js v5 · shadcn/ui · Render
 
----
-
-## Final Submission Status (W06) — for the evaluator
-
-Everything below is live and verifiable right now:
-
-| Item | Link / Location |
-|---|---|
-| Live application | https://glowbook-lzts.onrender.com |
-| Product demo summary (2–3 paragraphs) | [`docs/product-demo.md`](docs/product-demo.md) |
-| Lighthouse mobile evidence + contrast audit | [`docs/lighthouse-w06.md`](docs/lighthouse-w06.md) |
-| Weekly sprint & code-review reports | [`docs/w02-reports.md`](docs/w02-reports.md) … [`docs/w06-reports.md`](docs/w06-reports.md) |
-| Demo credentials + grader test steps | [Demo credentials](#demo-credentials) and [How to test](#how-to-test-for-the-grader) below |
-
-Delivered and working: sign-up / sign-in / sign-out with protected routes (Auth.js v5); six dynamic views (dashboard, services, clients, appointments day/week/month, settings, team); full CRUD on services, clients, and appointments; staff invitations with single-use links; OWNER/STAFF role enforcement (destructive deletes are owner-only, `403` for staff); editable studio settings with in-place session refresh; rescheduling with overlap protection (friendly 409 pre-check plus a Postgres exclusion-constraint backstop, enforced in production); a 45-test Vitest suite plus an 11-spec Playwright suite, both in CI; a responsive mobile nav; AA-clean text contrast; Lighthouse (mobile) 98/100/100/100 on `/` (public landing) and `/login`, and 84/100/100/60 on `/dashboard` (SEO is `noindex` by design on private routes). Known gaps are listed under [Known Issues](#known-issues--opportunities-for-improvement) — nothing shipped is overstated here.
+**Live demo:** https://glowbook-lzts.onrender.com
 
 ---
 
@@ -127,18 +113,6 @@ Seeded by `prisma/seed.ts` (`npx prisma db seed`):
 
 Never use these on a real database — the seed resets the `aurea-lashes` studio and refuses to run in production unless `ALLOW_PRODUCTION_SEED=1` + `SEED_ALLOWED_STUDIO=aurea-lashes`.
 
-### How to test (for the grader)
-
-Auth provider: **Auth.js v5** (Credentials provider; session in a signed cookie — no external provider needed).
-
-1. **Land, then sign in as OWNER** — open the root URL: the public landing tells the product story. Click **Sign in** and use `owner@glowbook.dev` / `GlowBook!2026` (or the `SEED_PASSWORD` value if overridden). Land on `/dashboard` with today's and upcoming appointments — real rows from the seeded studio.
-2. **Exercise two-model CRUD** — `/services`: create/edit/archive a service (archiving keeps past bookings). `/clients`: create/edit/archive a client with notes. `/appointments`: book a slot (overlap returns `409`), edit, change status, cancel.
-3. **Verify role enforcement** — open `/settings` as OWNER, change the studio name/timezone/currency, save: the sidebar branding updates with no sign-out. Then sign in as STAFF (`staff@glowbook.dev`, same password): `/settings` is read-only, Archive/Delete buttons are hidden, and calling `DELETE /api/services/:id` directly returns `403`.
-4. **Sign-up flow** — `/signup` creates a brand-new studio + OWNER account, proving multi-tenancy (each studio only sees its own data).
-5. **Invitations** — as OWNER open `/team`, invite `teammate@example.com`, copy the link, open it in an incognito window, set a name + password, and land on the dashboard as the new STAFF. Revoke a second invite to see the pending list update.
-6. **Calendar** — `/appointments` tabs Day/Week/Month with prev/today/next navigation; open a day cell from the month grid; use Move on a booking to change its slot (an overlapping move answers `409` on the field).
-7. **Sign-out** — the header menu signs out and the auth gate (`proxy.ts`) bounces logged-out visitors back to `/login`.
-
 ### Other scripts
 
 ```bash
@@ -146,7 +120,7 @@ npm run build        # production build
 npm run start        # serve the production build
 npm run lint         # ESLint
 npm run test         # Vitest unit suite (45 tests)
-npm run test:e2e      # Playwright end-to-end suite (11 specs, needs a database — see below)
+npm run test:e2e      # Playwright end-to-end suite (11 specs; needs a migrated + seeded DATABASE_URL — CI provisions its own)
 ```
 
 ---
@@ -230,9 +204,8 @@ docs/
   architecture.md    → routes, components, hierarchy, Week 04 priority ranking
   data-model.md      → entities, fields, relationships
   design-system.md   → palette, typography, spacing
-  w02-reports.md, w03-reports.md, w04-reports.md, w05-reports.md
-specs/001-glowbook-booking/  → original Spec-Kit working spec (superseded by docs/glowbook-spec.md)
-.github/copilot-instructions.md → AI assistant rules for the whole team
+  w02-reports.md, w03-reports.md, w04-reports.md, w05-reports.md, w06-reports.md
+  images/            → W03 report screenshots (local setup, data model, component hierarchy)
 ```
 
 \* `/team` is fully working (invite/revoke/members for OWNER, read-only for STAFF). `appointments` has day/week/month views with book/move/cancel/status (drag-to-reschedule stays in the backlog).
@@ -291,7 +264,6 @@ Sign-up, sign-out, and password reset are React Server Actions in `src/lib/auth/
 - Every change lands through a pull request. Through Week 03 each PR needed an approving review from another team member; since the solo completion (Week 04 on) every PR ships a documented self-review against the checklist instead — see the review comments on the merged PRs and `docs/w04-reports.md` §1.
 - Commit small and often; PRs should stay under ~200 changed lines so reviews take 15–20 minutes.
 - Formatting is Prettier (`.prettierrc`): run `npx prettier --write .` before committing. `npm run typecheck`, `npm run lint`, and `npx prettier --check .` must all pass before requesting review.
-- Team conventions and the governance rules we agreed on live in [`.specify/memory/constitution.md`](.specify/memory/constitution.md).
 
 ---
 
@@ -316,12 +288,6 @@ Sign-up, sign-out, and password reset are React Server Actions in `src/lib/auth/
 - Single-day schedule view only; a month view and drag-to-reschedule are Phase 2.
 - **Unit test suite** — Vitest, 45 tests (`npm run test`, also a CI step): day/week/month datetime bounds incl. DST transitions, Zod schema regressions from earlier sprints, token properties, money/time formatting, overlap-violation mapping. Database-backed helpers are excluded from the suite by design (they throw at import without `DATABASE_URL`).
 - **End-to-end suite** — Playwright, 11 specs (`npm run test:e2e`, also a CI job against a Postgres service): signup/login/logout, services/clients CRUD, booking + overlap 409, staff read-only + 403, settings refresh, invite join/revoke, calendar tabs + move. Needs a database locally (same `DATABASE_URL` you develop against, migrated + seeded); CI provisions its own.
-
-## Accessibility & Performance
-
-- **Text contrast:** every text/background pair meets WCAG AA (body, links, buttons, and headings meet AAA) — verified by computed ratios and by Lighthouse with zero `color-contrast` violations on all audited routes.
-- **Lighthouse (mobile):** `/` 98/100/100/100 (public landing, crawlable), `/login` 98/100/100/100, `/dashboard` 84/100/100/60 — the dashboard SEO score is the intentional `noindex` on private routes. Full method, scores, and strongest/weakest analysis: [`docs/lighthouse-w06.md`](docs/lighthouse-w06.md).
-- **How this is graded:** `/` (public landing, SEO 100) is the entry point for Lighthouse. Private `(app)` routes intentionally carry `noindex` so studio data never reaches crawlers, which caps their SEO at 60 by design — that is the documented privacy decision, not a defect.
 
 ---
 

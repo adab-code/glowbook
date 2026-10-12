@@ -3,7 +3,7 @@
 **Feature Branch**: `001-glowbook-booking`
 **Created**: 2026-09-17 · **Last reviewed**: 2026-09-24 (Week 03 team meeting)
 **Status**: Agreed — team-reviewed copy
-**Spec-Kit source artifact**: [`specs/001-glowbook-booking/spec.md`](../specs/001-glowbook-booking/spec.md) (quality checklist: [`requirements.md`](../specs/001-glowbook-booking/checklists/requirements.md))
+**Spec-Kit source artifact**: the original `specs/001-glowbook-booking` working spec (kept locally, not part of the repository)
 
 > This document is the authoritative project specification the team builds from. It is the Spec-Kit output from Week 02, restructured and expanded by the team during the Week 02 and Week 03 meetings. Supporting planning documents: [`architecture.md`](./architecture.md), [`data-model.md`](./data-model.md), [`design-system.md`](./design-system.md).
 
