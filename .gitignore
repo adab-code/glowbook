@@ -57,3 +57,20 @@ skills-lock.json
 # Personal notes and submission drafts. Never pushed: these are my own
 # working files for the Canvas text entry boxes, not project documentation.
 .private/
+
+# Local-only working files. Kept on disk, never pushed: docs and tooling that
+# the course consignas do not request in the repo (weekly closeout notes,
+# Canvas/paste drafts, Spec-Kit working spec, agent tooling).
+AGENTS.md
+CLAUDE.md
+.opencode/
+.specify/
+.github/copilot-instructions.md
+specs/
+docs/product-demo.md
+docs/lighthouse-w06.md
+docs/w07-reports.md
+docs/images/README.md
+docs/images/glowBook_PDataDesing.png
+docs/images/glowBook_PDesing.png
+docs/images/screenProj_run.png
