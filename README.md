@@ -18,7 +18,7 @@ Everything below is live and verifiable right now:
 | Weekly sprint & code-review reports | [`docs/w02-reports.md`](docs/w02-reports.md) … [`docs/w06-reports.md`](docs/w06-reports.md) |
 | Demo credentials + grader test steps | [Demo credentials](#demo-credentials) and [How to test](#how-to-test-for-the-grader) below |
 
-Delivered and working: sign-up / sign-in / sign-out with protected routes (Auth.js v5); six dynamic views (dashboard, services, clients, appointments day/week/month, settings, team); full CRUD on services, clients, and appointments; staff invitations with single-use links; OWNER/STAFF role enforcement (destructive deletes are owner-only, `403` for staff); editable studio settings with in-place session refresh; rescheduling with overlap protection (friendly 409 pre-check plus a Postgres exclusion-constraint backstop, enforced in production); a 45-test Vitest suite plus an 11-spec Playwright suite, both in CI; a responsive mobile nav; AA-clean text contrast; Lighthouse (mobile) 98/100/100/100 on `/login` and 84/100/100/60 on `/dashboard` (SEO is `noindex` by design on private routes). Known gaps are listed under [Known Issues](#known-issues--opportunities-for-improvement) — nothing shipped is overstated here.
+Delivered and working: sign-up / sign-in / sign-out with protected routes (Auth.js v5); six dynamic views (dashboard, services, clients, appointments day/week/month, settings, team); full CRUD on services, clients, and appointments; staff invitations with single-use links; OWNER/STAFF role enforcement (destructive deletes are owner-only, `403` for staff); editable studio settings with in-place session refresh; rescheduling with overlap protection (friendly 409 pre-check plus a Postgres exclusion-constraint backstop, enforced in production); a 45-test Vitest suite plus an 11-spec Playwright suite, both in CI; a responsive mobile nav; AA-clean text contrast; Lighthouse (mobile) 98/100/100/100 on `/` (public landing) and `/login`, and 84/100/100/60 on `/dashboard` (SEO is `noindex` by design on private routes). Known gaps are listed under [Known Issues](#known-issues--opportunities-for-improvement) — nothing shipped is overstated here.
 
 ---
 
@@ -42,7 +42,7 @@ The MVP scope comes from [`docs/glowbook-spec.md`](docs/glowbook-spec.md) and is
 - **Client profiles** — CRUD with free-form notes (allergies, preferences) and appointment history
 - **Appointment calendar** — day/week/month views, book, reschedule (Move), edit, and cancel bookings with double-booking protection (friendly 409 pre-check plus a Postgres exclusion constraint backstop)
 - **Daily dashboard** — today's appointments in chronological order plus an upcoming preview, with status updates inline
-- **Discoverability** — per-page titles and descriptions, a code-generated Open Graph image, and `noindex` on the private `(app)` routes so studio data is never surfaced to crawlers
+- **Discoverability** — a public landing at `/` tells the product story and links to sign-in/sign-up; per-page titles and descriptions, a code-generated Open Graph image, and `noindex` on the private `(app)` routes so studio data is never surfaced to crawlers
 
 ---
 
@@ -131,7 +131,7 @@ Never use these on a real database — the seed resets the `aurea-lashes` studio
 
 Auth provider: **Auth.js v5** (Credentials provider; session in a signed cookie — no external provider needed).
 
-1. **Sign in as OWNER** — `owner@glowbook.dev` / `GlowBook!2026` (or the `SEED_PASSWORD` value if overridden). Land on `/dashboard` with today's and upcoming appointments — real rows from the seeded studio.
+1. **Land, then sign in as OWNER** — open the root URL: the public landing tells the product story. Click **Sign in** and use `owner@glowbook.dev` / `GlowBook!2026` (or the `SEED_PASSWORD` value if overridden). Land on `/dashboard` with today's and upcoming appointments — real rows from the seeded studio.
 2. **Exercise two-model CRUD** — `/services`: create/edit/archive a service (archiving keeps past bookings). `/clients`: create/edit/archive a client with notes. `/appointments`: book a slot (overlap returns `409`), edit, change status, cancel.
 3. **Verify role enforcement** — open `/settings` as OWNER, change the studio name/timezone/currency, save: the sidebar branding updates with no sign-out. Then sign in as STAFF (`staff@glowbook.dev`, same password): `/settings` is read-only, Archive/Delete buttons are hidden, and calling `DELETE /api/services/:id` directly returns `403`.
 4. **Sign-up flow** — `/signup` creates a brand-new studio + OWNER account, proving multi-tenancy (each studio only sees its own data).
@@ -204,6 +204,7 @@ src/
   proxy.ts             → optimistic auth gate (Next 16 renamed middleware.ts → proxy.ts)
   app/
     layout.tsx         → root layout, next/font (Geist, Geist_Mono, Fraunces)
+    page.tsx           → public landing (signed-in visitors go to /dashboard)
     globals.css        → Tailwind v4 design tokens in an @theme block
     (auth)/            → login, signup, forgot-password, reset-password
     (app)/            → authenticated shell: dashboard, services, clients, appointments, team, settings
@@ -319,8 +320,8 @@ Sign-up, sign-out, and password reset are React Server Actions in `src/lib/auth/
 ## Accessibility & Performance
 
 - **Text contrast:** every text/background pair meets WCAG AA (body, links, buttons, and headings meet AAA) — verified by computed ratios and by Lighthouse with zero `color-contrast` violations on all audited routes.
-- **Lighthouse (mobile):** `/login` 98/100/100/100, `/dashboard` 84/100/100/60 — the dashboard SEO score is the intentional `noindex` on private routes. Full method, scores, and strongest/weakest analysis: [`docs/lighthouse-w06.md`](docs/lighthouse-w06.md).
-- **How this is graded:** `/login` (public, SEO 100) is the entry point for Lighthouse. Private `(app)` routes intentionally carry `noindex` so studio data never reaches crawlers, which caps their SEO at 60 by design — that is the documented privacy decision, not a defect.
+- **Lighthouse (mobile):** `/` 98/100/100/100 (public landing, crawlable), `/login` 98/100/100/100, `/dashboard` 84/100/100/60 — the dashboard SEO score is the intentional `noindex` on private routes. Full method, scores, and strongest/weakest analysis: [`docs/lighthouse-w06.md`](docs/lighthouse-w06.md).
+- **How this is graded:** `/` (public landing, SEO 100) is the entry point for Lighthouse. Private `(app)` routes intentionally carry `noindex` so studio data never reaches crawlers, which caps their SEO at 60 by design — that is the documented privacy decision, not a defect.
 
 ---
 
