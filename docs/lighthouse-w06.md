@@ -6,10 +6,17 @@
 
 | Route | Performance | Accessibility | Best Practices | SEO |
 |---|---|---|---|---|
+| `/` (public landing) | 98 | **100** | **100** | **100** |
 | `/login` (public) | 98 | **100** | **100** | **100** |
 | `/dashboard` (authenticated) | 84 | **100** | **100** | 60* |
 
 \* The dashboard's SEO score is `is-crawlable: 0` **by design**: every private `(app)` route carries `noindex` so studio data is never surfaced to crawlers (see README → Features → Discoverability). Public routes score SEO 100.
+
+## Public landing `/` (post-W07 closeout)
+
+Same method (mobile, fresh profile ≈ incognito, warmed production deploy), run against the deploy serving the landing-page commit `f871bb1`. The landing is a public, crawlable route by design — outside the `(app)` group (no `noindex`) and outside the proxy matcher (no session required) — so it is the right entry point for Lighthouse SEO.
+
+`/` scores **98/100/100/100**. Failing-audit detail: none — the only zero-score entry is `bf-cache` (expected: the page reads the session cookie to redirect signed-in visitors, and cookie-reading pages opt out of bfcache). No red/critical audits.
 
 ## Strongest and weakest
 
